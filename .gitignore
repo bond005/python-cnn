@@ -1,0 +1,14 @@
+*.aux
+*.loa
+*.log
+*.out
+*.pdf
+*.pyc
+*.toc
+*.csv
+*.xlsx
+*.xlsx
+*.
+**/.idea
+**/__pycache__
+**/.Rhistory
