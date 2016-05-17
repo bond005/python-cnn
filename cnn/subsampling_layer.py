@@ -3,7 +3,44 @@
 # Скрипт ориентирован на использование в Python 3.*
 #
 
+import copy
+import numpy
+import random
 import cnn.common
+
+
+class ESubsamplingLayerCreating(cnn.common.ELayerException):
+    """ Ошибка генерируется внутри конструктора класса SubsamplingLayer в случае, если параметры
+    создаваемого слоя подвыборки заданы неверно. """
+    def get_base_msg(self):
+        base_msg = 'subsampling layer cannot be created!'
+        layer_str = self.get_layer_id_as_string()
+        if len(layer_str) > 0:
+            base_msg = '{0} subsampling layer cannot be created!'.format(layer_str)
+        return base_msg
+
+class ESubsamplingLayerCalculating(cnn.common.ELayerException):
+    """ Ошибка генерируется в случае, если данные (входные карты), поданные на вход слоя
+    подвыборки, некорректны, т.е. не соответствуют по своей структуре этому слою подвыборки. """
+    def get_base_msg(self):
+        base_msg = 'Outputs of subsampling layer cannot be calculated!'
+        layer_str = self.get_layer_id_as_string()
+        if len(layer_str) > 0:
+            base_msg = 'Outputs of {0} subsampling layer cannot be '\
+                       'calculated!'.format(layer_str)
+        return base_msg
+
+class ESubsamplingLayerGradient(cnn.common.ELayerException):
+    """ Ошибка генерируется в случае, если невозможно расчитать карты градиентов для слоя подвыборки
+    на основе уже известных весов и карт градиентов следующего за ним слоя свёркти (слой свёртки
+    не соответствует слою подвыборки). """
+    def get_base_msg(self):
+        base_msg = 'Gradient of subsampling layer cannot be calculated!'
+        layer_str = self.get_layer_id_as_string()
+        if len(layer_str) > 0:
+            base_msg = 'Gradient of {0} subsampling layer cannot be '\
+                       'calculated!'.format(layer_str)
+        return base_msg
 
 
 class SubsamplingLayer:
@@ -160,10 +197,11 @@ class SubsamplingLayer:
                 col2 = col1 + self.__receptive_field_size[1]
                 self.__reduced_input_maps[ft_ind][ind] = input_maps[ft_ind][row1:row2,\
                                                                             col1:col2].max()
-            self.__feature_maps[ft_map_ind] = numpy.tanh(
+            self.__feature_maps[ft_ind] = numpy.tanh(
                 self.__reduced_input_maps[ft_ind] * self.__weights_of_feature_maps[ft_ind] \
-                + self.__biases_of_feature_maps[ft_map_ind]
+                + self.__biases_of_feature_maps[ft_ind]
             )
+        return self.__feature_maps
 
     def calculate_gradient(self, next_weights, next_gradient, next_receptive_field_size):
         """ Вычислить карты градиентов слоя подвыборки.
@@ -202,7 +240,7 @@ class SubsamplingLayer:
                     * next_weights[0][ft_ind]
                 )
             for next_ft_ind in range(next_feature_maps_number-1):
-                self.__tmp_matrix[row1:row2, col1:col2] = next_gradient[next_ft_ind+1]
+                tmp_matrix[row1:row2, col1:col2] = next_gradient[next_ft_ind+1]
                 for ind in numpy.ndindex(next_feature_map_size):
                     row_slice = (ind[0], (ind[0] + next_receptive_field_size[0]))
                     col_slice = (ind[1], (ind[1] + next_receptive_field_size[1]))
@@ -210,6 +248,7 @@ class SubsamplingLayer:
                         tmp_matrix[row_slice[0]:row_slice[1], col_slice[0]:col_slice[1]] \
                         * next_weights[next_ft_ind+1][ft_ind]
                     )
+        return self.__gradients
 
     def update_weights_and_biases(self, learning_rate):
         """ Обновить веса и смещения всех нейронов слоя подвыборки.
@@ -316,7 +355,7 @@ class SubsamplingLayer:
                     'Type of {0} gradient map in next layer is '\
                     'inadmissible!'.format(cnn.common.integer_to_ordinal(ind+2))
                 )
-            if next_gradient_maps[ind+1].shape != shape_of_next_layer:
+            if next_gradient_maps[ind+1].shape != next_layer_shape:
                 raise ESubsamplingLayerGradient(
                     self.__layer_id,
                     'Size of {0} gradient map in next layer does not coinside with size of other '\

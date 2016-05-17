@@ -233,8 +233,7 @@ class TestSubsamplingLayer(unittest.TestCase):
 
     def test_number_of_trainable_params(self):
         self.assertEqual(self.__subs_layer.number_of_trainable_params,
-                         (self.__receptive_field_size[0] * self.__receptive_field_size[1] \
-                          * self.__number_of_input_maps + 1) * self.__number_of_feature_maps)
+                         self.__number_of_feature_maps * 2)
 
     def test_layer_id(self):
         self.assertEqual(self.__subs_layer.layer_id, self.__layer_id)
@@ -324,7 +323,7 @@ class TestSubsamplingLayer(unittest.TestCase):
             self.__subs_layer.calculate_outputs(input_maps)
 
     def test_calculate_outputs_test_negative_3(self):
-        with self.assertRaises(convolution_layer.ESubsamplingLayerCalculating):
+        with self.assertRaises(subsampling_layer.ESubsamplingLayerCalculating):
             self.__subs_layer.calculate_outputs(None)
 
     def test_calculate_gradient_test_positive_1(self):
@@ -418,13 +417,13 @@ class TestSubsamplingLayer(unittest.TestCase):
         ]
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
-                self.__weights_of_next_subsampling_layer,
-                gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
+                self.__weights_of_next_convolution_layer,
+                gradients_of_next_convolution_layer,
+                self.__receptive_field_size_of_next_convolution_layer
             )
 
     def test_calculate_gradient_test_negative_8(self):
-        self.__gradients_of_next_convolution_layer = [
+        gradients_of_next_convolution_layer = [
             numpy.array([
                 (0.205001, 0.264354),
                 (0.370529, -0.45901),
@@ -448,69 +447,53 @@ class TestSubsamplingLayer(unittest.TestCase):
         ]
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
-                self.__weights_of_next_subsampling_layer,
-                gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
+                self.__weights_of_next_convolution_layer,
+                gradients_of_next_convolution_layer,
+                self.__receptive_field_size_of_next_convolution_layer
             )
 
     def test_calculate_gradient_test_negative_9(self):
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
                 [0.0, 0.0, 0.0, 0.0, 0.0],
-                self.__gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
+                self.__gradients_of_next_convolution_layer,
+                self.__receptive_field_size_of_next_convolution_layer
             )
 
     def test_calculate_gradient_test_negative_10(self):
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
                 [0.0, 'a'],
-                self.__gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
+                self.__gradients_of_next_convolution_layer,
+                self.__receptive_field_size_of_next_convolution_layer
             )
 
     def test_update_weights_and_biases_test_positive_1(self):
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        self.__conv_layer.update_weights_and_biases(self.__learning_rate, self.__input_maps)
-        new_weights = self.__conv_layer.weights
+        self.__subs_layer.weights = self.__weights_before_learning
+        self.__subs_layer.biases = self.__biases_before_learning
+        self.__subs_layer.calculate_outputs(self.__input_maps)
+        self.__subs_layer.calculate_gradient(self.__weights_of_next_convolution_layer,
+                                             self.__gradients_of_next_convolution_layer,
+                                             self.__receptive_field_size_of_next_convolution_layer)
+        self.__subs_layer.update_weights_and_biases(self.__learning_rate)
+        new_weights = self.__subs_layer.weights
         self.assertEqual(len(new_weights), self.__number_of_feature_maps,
                          msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'convolution kernels is incorrect!'.format(self.__number_of_feature_maps,
-                                                                    len(new_weights))
+                         'weights is incorrect!'.format(self.__number_of_feature_maps,
+                                                        len(new_weights))
                          )
         for ft_ind in range(self.__number_of_feature_maps):
-            self.assertEqual(len(new_weights[ft_ind]), self.__number_of_input_maps,
-                             msg = 'Target {0} != real {1}: number of updated convolution kernels '\
-                             'of {2} feature map is incorrect!'.format(
-                                 self.__number_of_input_maps, len(new_weights[ft_ind]),
-                                 integer_to_ordinal(ft_ind+1))
-                             )
-            for inp_ind in range(self.__number_of_input_maps):
-                self.assertIsInstance(new_weights[ft_ind][inp_ind], numpy.ndarray,
-                                      msg = 'Type of {0} convolution kernel of {1} feature map is '\
-                                      'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                          integer_to_ordinal(ft_ind+1))
-                                      )
-                self.assertEqual(new_weights[ft_ind][inp_ind].shape, self.__receptive_field_size,
-                                 msg = 'Sizes of {0} convolution kernel of {1} feature map are '\
-                                 'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                     integer_to_ordinal(ft_ind+1))
-                                 )
-                for ind in numpy.ndindex(self.__receptive_field_size):
-                    self.assertAlmostEqual(
-                        new_weights[ft_ind][inp_ind][ind],
-                        self.__weights_after_learning[ft_ind][inp_ind][ind],
-                        msg = 'Values of {0} convolution kernel of {1} feature map are '\
-                        'incorrect!\n{2}'.format(
-                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(ft_ind+1),
-                            str(new_weights[ft_ind][inp_ind]))
-                    )
-        new_biases = self.__conv_layer.biases
+            self.assertIsInstance(new_weights[ft_ind], float,
+                                  msg = 'Type of {0} feature map\'s weight is incorrect'.format(
+                                      integer_to_ordinal(ft_ind+1))
+                                  )
+            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_after_learning[ft_ind],
+                                   msg = 'Target {0} != real {1}: value of {2} feature map\'s '\
+                                   'weight is incorrect'.format(
+                                       self.__weights_before_learning[ft_ind], new_weights[ft_ind],
+                                       integer_to_ordinal(ft_ind+1))
+                                   )
+        new_biases = self.__subs_layer.biases
         self.assertEqual(len(new_biases), self.__number_of_feature_maps,
                          msg = 'Target {0} != real {1}: number of feature maps with updated '\
                          'biases is incorrect!'.format(self.__number_of_feature_maps,
@@ -529,47 +512,31 @@ class TestSubsamplingLayer(unittest.TestCase):
                                    )
 
     def test_update_weights_and_biases_test_positive_2(self):
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        self.__conv_layer.update_weights_and_biases(0.0, self.__input_maps)
-        new_weights = self.__conv_layer.weights
+        self.__subs_layer.weights = self.__weights_before_learning
+        self.__subs_layer.biases = self.__biases_before_learning
+        self.__subs_layer.calculate_outputs(self.__input_maps)
+        self.__subs_layer.calculate_gradient(self.__weights_of_next_convolution_layer,
+                                             self.__gradients_of_next_convolution_layer,
+                                             self.__receptive_field_size_of_next_convolution_layer)
+        self.__subs_layer.update_weights_and_biases(0.0)
+        new_weights = self.__subs_layer.weights
         self.assertEqual(len(new_weights), self.__number_of_feature_maps,
                          msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'convolution kernels is incorrect!'.format(self.__number_of_feature_maps,
-                                                                    len(new_weights))
+                         'weights is incorrect!'.format(self.__number_of_feature_maps,
+                                                        len(new_weights))
                          )
         for ft_ind in range(self.__number_of_feature_maps):
-            self.assertEqual(len(new_weights[ft_ind]), self.__number_of_input_maps,
-                             msg = 'Target {0} != real {1}: number of updated convolution kernels '\
-                             'of {2} feature map is incorrect!'.format(
-                                 self.__number_of_input_maps, len(new_weights[ft_ind]),
-                                 integer_to_ordinal(ft_ind+1))
-                             )
-            for inp_ind in range(self.__number_of_input_maps):
-                self.assertIsInstance(new_weights[ft_ind][inp_ind], numpy.ndarray,
-                                      msg = 'Type of {0} convolution kernel of {1} feature map is '\
-                                      'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                          integer_to_ordinal(ft_ind+1))
-                                      )
-                self.assertEqual(new_weights[ft_ind][inp_ind].shape, self.__receptive_field_size,
-                                 msg = 'Sizes of {0} convolution kernel of {1} feature map are '\
-                                 'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                     integer_to_ordinal(ft_ind+1))
-                                 )
-                for ind in numpy.ndindex(self.__receptive_field_size):
-                    self.assertAlmostEqual(
-                        new_weights[ft_ind][inp_ind][ind],
-                        self.__weights_before_learning[ft_ind][inp_ind][ind],
-                        msg = 'Values of {0} convolution kernel of {1} feature map are '\
-                        'incorrect!\n{2}'.format(
-                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(ft_ind+1),
-                            str(new_weights[ft_ind][inp_ind]))
-                    )
-        new_biases = self.__conv_layer.biases
+            self.assertIsInstance(new_weights[ft_ind], float,
+                                  msg = 'Type of {0} feature map\'s weight is incorrect'.format(
+                                      integer_to_ordinal(ft_ind+1))
+                                  )
+            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_after_learning[ft_ind],
+                                   msg = 'Target {0} != real {1}: value of {2} feature map\'s '\
+                                   'weight is incorrect'.format(
+                                       self.__weights_before_learning[ft_ind], new_weights[ft_ind],
+                                       integer_to_ordinal(ft_ind+1))
+                                   )
+        new_biases = self.__subs_layer.biases
         self.assertEqual(len(new_biases), self.__number_of_feature_maps,
                          msg = 'Target {0} != real {1}: number of feature maps with updated '\
                          'biases is incorrect!'.format(self.__number_of_feature_maps,
@@ -580,7 +547,7 @@ class TestSubsamplingLayer(unittest.TestCase):
                                   msg = 'Type of {0} feature map\'s bias is incorrect'.format(
                                       integer_to_ordinal(ft_ind+1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_before_learning[ft_ind],
+            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_after_learning[ft_ind],
                                    msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
                                    ' is incorrect'.format(self.__biases_before_learning[ft_ind],
                                                           new_biases[ft_ind],
@@ -588,47 +555,31 @@ class TestSubsamplingLayer(unittest.TestCase):
                                    )
 
     def test_update_weights_and_biases_test_positive_3(self):
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        self.__conv_layer.update_weights_and_biases(None, self.__input_maps)
-        new_weights = self.__conv_layer.weights
+        self.__subs_layer.weights = self.__weights_before_learning
+        self.__subs_layer.biases = self.__biases_before_learning
+        self.__subs_layer.calculate_outputs(self.__input_maps)
+        self.__subs_layer.calculate_gradient(self.__weights_of_next_convolution_layer,
+                                             self.__gradients_of_next_convolution_layer,
+                                             self.__receptive_field_size_of_next_convolution_layer)
+        self.__subs_layer.update_weights_and_biases(None)
+        new_weights = self.__subs_layer.weights
         self.assertEqual(len(new_weights), self.__number_of_feature_maps,
                          msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'convolution kernels is incorrect!'.format(self.__number_of_feature_maps,
-                                                                    len(new_weights))
+                         'weights is incorrect!'.format(self.__number_of_feature_maps,
+                                                        len(new_weights))
                          )
         for ft_ind in range(self.__number_of_feature_maps):
-            self.assertEqual(len(new_weights[ft_ind]), self.__number_of_input_maps,
-                             msg = 'Target {0} != real {1}: number of updated convolution kernels '\
-                             'of {2} feature map is incorrect!'.format(
-                                 self.__number_of_input_maps, len(new_weights[ft_ind]),
-                                 integer_to_ordinal(ft_ind+1))
-                             )
-            for inp_ind in range(self.__number_of_input_maps):
-                self.assertIsInstance(new_weights[ft_ind][inp_ind], numpy.ndarray,
-                                      msg = 'Type of {0} convolution kernel of {1} feature map is '\
-                                      'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                          integer_to_ordinal(ft_ind+1))
-                                      )
-                self.assertEqual(new_weights[ft_ind][inp_ind].shape, self.__receptive_field_size,
-                                 msg = 'Sizes of {0} convolution kernel of {1} feature map are '\
-                                 'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                     integer_to_ordinal(ft_ind+1))
-                                 )
-                for ind in numpy.ndindex(self.__receptive_field_size):
-                    self.assertAlmostEqual(
-                        new_weights[ft_ind][inp_ind][ind],
-                        self.__weights_before_learning[ft_ind][inp_ind][ind],
-                        msg = 'Values of {0} convolution kernel of {1} feature map are '\
-                        'incorrect!\n{2}'.format(
-                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(ft_ind+1),
-                            str(new_weights[ft_ind][inp_ind]))
-                    )
-        new_biases = self.__conv_layer.biases
+            self.assertIsInstance(new_weights[ft_ind], float,
+                                  msg = 'Type of {0} feature map\'s weight is incorrect'.format(
+                                      integer_to_ordinal(ft_ind+1))
+                                  )
+            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_after_learning[ft_ind],
+                                   msg = 'Target {0} != real {1}: value of {2} feature map\'s '\
+                                   'weight is incorrect'.format(
+                                       self.__weights_before_learning[ft_ind], new_weights[ft_ind],
+                                       integer_to_ordinal(ft_ind+1))
+                                   )
+        new_biases = self.__subs_layer.biases
         self.assertEqual(len(new_biases), self.__number_of_feature_maps,
                          msg = 'Target {0} != real {1}: number of feature maps with updated '\
                          'biases is incorrect!'.format(self.__number_of_feature_maps,
@@ -639,81 +590,12 @@ class TestSubsamplingLayer(unittest.TestCase):
                                   msg = 'Type of {0} feature map\'s bias is incorrect'.format(
                                       integer_to_ordinal(ft_ind+1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_before_learning[ft_ind],
+            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_after_learning[ft_ind],
                                    msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
                                    ' is incorrect'.format(self.__biases_before_learning[ft_ind],
                                                           new_biases[ft_ind],
                                                           integer_to_ordinal(ft_ind+1))
                                    )
-
-    def test_update_weights_and_biases_test_negative_1(self):
-        input_maps = [
-            numpy.array([
-                (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724),
-                (-0.68267, -0.09463, 0.614261, -0.50213, 0.565014),
-                (0.076374, -0.7649, -0.30093, 0.471437, -0.32848),
-                (-0.38347, 0.160011, -0.30884, 0.493158, -0.28132),
-                (-0.64146, -0.92638, 0.867563, -0.10696, -0.05661),
-                (0.422351, -0.06871, 0.186391, -0.49686, 0.870728)
-            ]),
-            numpy.array([
-                (-0.20349, 0.031203, -0.12173, 0.743632, 0.328677),
-                (-0.20938, 0.00954, 0.517926, 0.607911, 0.535574),
-                (0.808547, 0.074892, -0.54315, -0.34995, 0.639988),
-                (0.773657, -0.29811, -0.13906, -0.51, -0.00329),
-                (-0.27878, 0.498802, -0.15015, 0.823873, 0.800871),
-                (0.100963, 0.540328, -0.4175, -0.13177, 0.149454)
-            ]),
-            numpy.array([
-                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333),
-                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149),
-                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361),
-                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865),
-                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176),
-                (-0.62173, -0.15969, 0.700956, 0.87735, 0.450899)
-            ]),
-            numpy.array([
-                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333),
-                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149),
-                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361),
-                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865),
-                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176),
-                (-0.62173, -0.15969, 0.700956, 0.87735, 0.450899)
-            ])
-        ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.update_weights_and_biases(self.__learning_rate, input_maps)
-
-    def test_update_weights_and_biases_test_negative_2(self):
-        input_maps = [
-            numpy.array([
-                (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724),
-                (-0.68267, -0.09463, 0.614261, -0.50213, 0.565014),
-                (0.076374, -0.7649, -0.30093, 0.471437, -0.32848),
-                (-0.38347, 0.160011, -0.30884, 0.493158, -0.28132),
-                (-0.64146, -0.92638, 0.867563, -0.10696, -0.05661)
-            ]),
-            numpy.array([
-                (-0.20349, 0.031203, -0.12173, 0.743632, 0.328677),
-                (-0.20938, 0.00954, 0.517926, 0.607911, 0.535574),
-                (0.808547, 0.074892, -0.54315, -0.34995, 0.639988),
-                (0.773657, -0.29811, -0.13906, -0.51, -0.00329),
-                (-0.27878, 0.498802, -0.15015, 0.823873, 0.800871)
-            ]),
-            numpy.array([
-                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333),
-                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149),
-                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361),
-                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865),
-                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176)
-            ])
-        ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.update_weights_and_biases(self.__learning_rate, input_maps)
-
-    def test_update_weights_and_biases_test_negative_3(self):
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.update_weights_and_biases(self.__learning_rate, None)
 
 
 if __name__ == '__main__':
