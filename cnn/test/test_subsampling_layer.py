@@ -70,18 +70,18 @@ class TestSubsamplingLayer(unittest.TestCase):
                 (-0.08582690834, 0.2268520607, 0.1776888803),
                 (0.0380044824, 0.04187582332, -0.110107481),
                 (-0.3434222656, -0.01611861735, -0.2483066196),
-                (0.1633282823, -0.3156531405, -0.04330379265)
+                (0.1633282823, -0.2608100462, -0.04330379265)
             ]),
             numpy.array([
                 (0.1254424326, 0.006265172503, -0.1386492782),
                 (0.1541471703, 0.7260977216, -0.09298807092),
                 (0.2016896913, -0.185401178, 0.4880214163),
-                (0.4567907443, -0.0958537115, 0.0566670354)
+                (0.4567907443, -0.09138750679, 0.0566670354)
             ])
         ]
         self.__learning_rate = 1.0
-        self.__weights_after_learning = [-0.3613495804, 0.913086574]
-        self.__biases_after_learning = [-0.4825982961, 1.740631146]
+        self.__weights_after_learning = [-0.338442662, 0.9151912283]
+        self.__biases_after_learning = [-0.4277552018, 1.745097351]
         self.__weights_of_next_convolution_layer = [
             [
                 numpy.array([
@@ -530,7 +530,7 @@ class TestSubsamplingLayer(unittest.TestCase):
                                   msg = 'Type of {0} feature map\'s weight is incorrect'.format(
                                       integer_to_ordinal(ft_ind+1))
                                   )
-            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_after_learning[ft_ind],
+            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_before_learning[ft_ind],
                                    msg = 'Target {0} != real {1}: value of {2} feature map\'s '\
                                    'weight is incorrect'.format(
                                        self.__weights_before_learning[ft_ind], new_weights[ft_ind],
@@ -547,7 +547,7 @@ class TestSubsamplingLayer(unittest.TestCase):
                                   msg = 'Type of {0} feature map\'s bias is incorrect'.format(
                                       integer_to_ordinal(ft_ind+1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_after_learning[ft_ind],
+            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_before_learning[ft_ind],
                                    msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
                                    ' is incorrect'.format(self.__biases_before_learning[ft_ind],
                                                           new_biases[ft_ind],
@@ -573,7 +573,7 @@ class TestSubsamplingLayer(unittest.TestCase):
                                   msg = 'Type of {0} feature map\'s weight is incorrect'.format(
                                       integer_to_ordinal(ft_ind+1))
                                   )
-            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_after_learning[ft_ind],
+            self.assertAlmostEqual(new_weights[ft_ind], self.__weights_before_learning[ft_ind],
                                    msg = 'Target {0} != real {1}: value of {2} feature map\'s '\
                                    'weight is incorrect'.format(
                                        self.__weights_before_learning[ft_ind], new_weights[ft_ind],
@@ -590,7 +590,7 @@ class TestSubsamplingLayer(unittest.TestCase):
                                   msg = 'Type of {0} feature map\'s bias is incorrect'.format(
                                       integer_to_ordinal(ft_ind+1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_after_learning[ft_ind],
+            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_before_learning[ft_ind],
                                    msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
                                    ' is incorrect'.format(self.__biases_before_learning[ft_ind],
                                                           new_biases[ft_ind],
@@ -599,4 +599,5 @@ class TestSubsamplingLayer(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    #unittest.main(verbosity=2)
+    unittest.main()

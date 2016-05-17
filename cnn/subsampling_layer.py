@@ -191,8 +191,8 @@ class SubsamplingLayer:
         self.__check_input_maps_of_this_layer(input_maps)
         for ft_ind in range(len(self.__feature_maps)):
             for ind in numpy.ndindex(self.__feature_map_size):
-                row1 = ind[0]
-                col1 = ind[1]
+                row1 = ind[0] * self.__receptive_field_size[0]
+                col1 = ind[1] * self.__receptive_field_size[1]
                 row2 = row1 + self.__receptive_field_size[0]
                 col2 = col1 + self.__receptive_field_size[1]
                 self.__reduced_input_maps[ft_ind][ind] = input_maps[ft_ind][row1:row2,\
@@ -231,23 +231,18 @@ class SubsamplingLayer:
         row2 = row1 + next_feature_map_size[0]
         col2 = col1 + next_feature_map_size[1]
         for ft_ind in range(feature_maps_number):
-            tmp_matrix[row1:row2, col1:col2] = next_gradient[0]
-            for ind in numpy.ndindex(self.__feature_map_size):
-                row_slice = (ind[0], (ind[0] + next_receptive_field_size[0]))
-                col_slice = (ind[1], (ind[1] + next_receptive_field_size[1]))
-                self.__gradients[ft_ind][ind] = numpy.sum(
-                    tmp_matrix[row_slice[0]:row_slice[1], col_slice[0]:col_slice[1]] \
-                    * next_weights[0][ft_ind]
-                )
-            for next_ft_ind in range(next_feature_maps_number-1):
-                tmp_matrix[row1:row2, col1:col2] = next_gradient[next_ft_ind+1]
-                for ind in numpy.ndindex(next_feature_map_size):
+            self.__gradients[ft_ind] = numpy.zeros(self.__feature_map_size)
+            for next_ft_ind in range(next_feature_maps_number):
+                tmp_matrix[row1:row2, col1:col2] = next_gradient[next_ft_ind]
+                for ind in numpy.ndindex(self.__feature_map_size):
                     row_slice = (ind[0], (ind[0] + next_receptive_field_size[0]))
                     col_slice = (ind[1], (ind[1] + next_receptive_field_size[1]))
                     self.__gradients[ft_ind][ind] += numpy.sum(
                         tmp_matrix[row_slice[0]:row_slice[1], col_slice[0]:col_slice[1]] \
-                        * next_weights[next_ft_ind+1][ft_ind]
+                        * rotated_weights[next_ft_ind][ft_ind]
                     )
+            self.__gradients[ft_ind] *= (1.0 - self.__feature_maps[ft_ind]\
+                                         * self.__feature_maps[ft_ind])
         return self.__gradients
 
     def update_weights_and_biases(self, learning_rate):
