@@ -172,6 +172,8 @@ class TestSubsamplingLayer(unittest.TestCase):
         return not is_same
 
     def test_weights_and_biases_test_positive_1(self):
+        """ Проверить, как записываются и читаются свойства weights ('Веса') и biases
+        ('Смещения'). """
         self.assertTrue(self.__initialize_weights_and_biases(),
                         msg = 'Weights and biases of convolution layer cannot be initialized!')
         self.__subs_layer.weights = self.__weights_before_learning
@@ -212,33 +214,51 @@ class TestSubsamplingLayer(unittest.TestCase):
                                    )
 
     def test_weights_test_negative_1(self):
+        """ Веса (weights) слоя - это обычный Python-список вещественных чисел, длина которого
+        равна количеству фичемап в слое. А что, если мы попытаемся записать в weights список большей
+        длины? """
         new_weights = [random.random() for ind in range(self.__number_of_feature_maps + 2)]
         with self.assertRaises(TypeError):
             self.__subs_layer.weights = new_weights
 
     def test_weights_test_negative_2(self):
+        """ Веса (weights) слоя - это обычный Python-список вещественных чисел, длина которого
+        равна количеству фичемап в слое. А что, если мы не все значения этого списка будут
+        вещественными? """
         new_weights = [0.3, 2, 'a', -1]
         with self.assertRaises(TypeError):
             self.__subs_layer.weights = new_weights
 
     def test_biases_test_negative_1(self):
+        """ Смещения (biases) слоя - это обычный Python-список вещественных чисел, длина которого
+        равна количеству фичемап в слое. А что, если мы попытаемся записать в biases список большей
+        длины? """
         new_biases = [random.random() for ind in range(self.__number_of_feature_maps + 2)]
         with self.assertRaises(TypeError):
             self.__subs_layer.biases = new_biases
 
     def test_biases_test_negative_2(self):
+        """ Смещения (biases) слоя - это обычный Python-список вещественных чисел, длина которого
+        равна количеству фичемап в слое. А что, если мы не все значения этого списка будут
+        вещественными? """
         new_biases = [0.3, 2, 'a', -1]
         with self.assertRaises(TypeError):
             self.__subs_layer.biases = new_biases
 
     def test_number_of_trainable_params(self):
+        """ Проверить, что свойство number_of_trainable_params (количество обучаемых параметров
+        слоя) возвращает правильное число. """
         self.assertEqual(self.__subs_layer.number_of_trainable_params,
                          self.__number_of_feature_maps * 2)
 
     def test_layer_id(self):
+        """ Проверить, что идентификатор слоя установлен правильно, т.е. свойство layer_id
+        возвращает именно то число, которое было установлено при создании этого слоя. """
         self.assertEqual(self.__subs_layer.layer_id, self.__layer_id)
 
     def test_calculate_outputs_test_positive_1(self):
+        """ Проверить, что выходы (выходные карты) слоя рассчитываются правильно при подаче на вход
+        заданных корректных входных сигналов (набора входных карт). """
         self.__subs_layer.weights = self.__weights_before_learning
         self.__subs_layer.biases = self.__biases_before_learning
         calculated_outputs = self.__subs_layer.calculate_outputs(self.__input_maps)
@@ -265,6 +285,8 @@ class TestSubsamplingLayer(unittest.TestCase):
                 )
 
     def test_calculate_outputs_test_negative_1(self):
+        """ Проверить ситуацию, когда надо рассчитать выходы слоя, а входной сигнал
+        некорректен - входных карт нужное число, но сами они несоответствующего размера. """
         input_maps = [
             numpy.array([
                 (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724),
@@ -287,6 +309,8 @@ class TestSubsamplingLayer(unittest.TestCase):
             self.__subs_layer.calculate_outputs(input_maps)
 
     def test_calculate_outputs_test_negative_2(self):
+        """ Проверить ситуацию, когда надо рассчитать выходы слоя, а входной сигнал
+        некорректен - входные карты правильного размера, но их слишком много. """
         input_maps = [
             numpy.array([
                 (-0.152650, -0.100040, -0.117630, 0.293608, 0.406800, 0.328764),
@@ -323,10 +347,14 @@ class TestSubsamplingLayer(unittest.TestCase):
             self.__subs_layer.calculate_outputs(input_maps)
 
     def test_calculate_outputs_test_negative_3(self):
+        """ Проверить ситуацию, когда надо рассчитать выходы слоя, а входной сигнал оказался вообще
+        None. """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerCalculating):
             self.__subs_layer.calculate_outputs(None)
 
     def test_calculate_gradient_test_positive_1(self):
+        """ Проверить, как расчитываются карты градиентов слоя, когда все входные данные (весовые
+        коэффициенты, карты градиентов и размеры рецептивного поля следующего слоя) корректны. """
         self.__subs_layer.weights = self.__weights_before_learning
         self.__subs_layer.biases = self.__biases_before_learning
         self.__subs_layer.calculate_outputs(self.__input_maps)
@@ -357,11 +385,17 @@ class TestSubsamplingLayer(unittest.TestCase):
                 )
 
     def test_calculate_gradient_test_negative_1(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты и карты
+        градиентов следующего слоя заданы корректно, а вот вместо размеров рецептивного поля
+        следующего слоя задано ничто. """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(self.__weights_of_next_convolution_layer,
                                                  self.__gradients_of_next_convolution_layer, None)
 
     def test_calculate_gradient_test_negative_2(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты и размеры
+        рецептивного поля следующего слоя заданы корректно, а вот вместо карт градиентов следующего
+        слоя задано ничто. """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
                 self.__weights_of_next_convolution_layer, None,
@@ -369,6 +403,9 @@ class TestSubsamplingLayer(unittest.TestCase):
             )
 
     def test_calculate_gradient_test_negative_3(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда карты градиентов и размеры
+        рецептивного поля следующего слоя заданы корректно, а вот вместо весовых коэффициентов
+        следующего слоя задано ничто. """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
                 None, self.__gradients_of_next_convolution_layer,
@@ -376,11 +413,15 @@ class TestSubsamplingLayer(unittest.TestCase):
             )
 
     def test_calculate_gradient_test_negative_4(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда размер рецептивного поля следующего
+        слоя задан некорректно (слишком маленький, меньше ожидаемого). """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(self.__weights_of_next_convolution_layer,
                                                  self.__gradients_of_next_convolution_layer, (1,1))
 
     def test_calculate_gradient_test_negative_5(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда размер рецептивного поля следующего
+        слоя задан некорректно (высота больше ожидаемой). """
         receptive_field_size_of_next_convolution_layer = (
             self.__receptive_field_size_of_next_convolution_layer[0] + 1,
             self.__receptive_field_size_of_next_convolution_layer[1]
@@ -391,6 +432,8 @@ class TestSubsamplingLayer(unittest.TestCase):
                                                  receptive_field_size_of_next_convolution_layer)
 
     def test_calculate_gradient_test_negative_6(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда размер рецептивного поля следующего
+        слоя задан некорректно (ширина больше ожидаемой). """
         receptive_field_size_of_next_convolution_layer = (
             self.__receptive_field_size_of_next_convolution_layer[0],
             self.__receptive_field_size_of_next_convolution_layer[1] + 1
@@ -401,6 +444,9 @@ class TestSubsamplingLayer(unittest.TestCase):
                                                  receptive_field_size_of_next_convolution_layer)
 
     def test_calculate_gradient_test_negative_7(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда карты градиентов следующего
+        слоя заданы некорректно (карта градиентов является не NumPy-матрицей, а просто двумерным
+        Python-списком вещественных чисел). """
         gradients_of_next_convolution_layer = [
             [
                 [-0.1286712969, -0.125479926, -0.003086782247, -0.1086308843],
@@ -423,6 +469,9 @@ class TestSubsamplingLayer(unittest.TestCase):
             )
 
     def test_calculate_gradient_test_negative_8(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда карты градиентов следующего
+        слоя заданы некорректно (карты градиентов действительно являются NumPy-матрицами, но вот
+        беда - этих матриц больше, чем надо). """
         gradients_of_next_convolution_layer = [
             numpy.array([
                 (0.205001, 0.264354),
@@ -453,6 +502,9 @@ class TestSubsamplingLayer(unittest.TestCase):
             )
 
     def test_calculate_gradient_test_negative_9(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты следующего
+        слоя заданы некорректно (они являются списком вещественных чисел, а должны быть - списком
+        списков NumPy-матриц, ведь следующий слой - это слой свёртки). """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
                 [0.0, 0.0, 0.0, 0.0, 0.0],
@@ -461,6 +513,9 @@ class TestSubsamplingLayer(unittest.TestCase):
             )
 
     def test_calculate_gradient_test_negative_10(self):
+        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты следующего
+        слоя заданы некорректно: они должны быть списком списков NumPy-матриц (ведь следующий
+        слой - это слой свёртки), а являются вообще какой-то фигнёй. """
         with self.assertRaises(subsampling_layer.ESubsamplingLayerGradient):
             self.__subs_layer.calculate_gradient(
                 [0.0, 'a'],
@@ -469,6 +524,9 @@ class TestSubsamplingLayer(unittest.TestCase):
             )
 
     def test_update_weights_and_biases_test_positive_1(self):
+        """ Проверить, как обновляются веса и смещения слоя с заданным коэффициентом скорости
+        обучения после прямого распространения сигнала и обратного распространения ошибки (т.е.
+        выходы и градиенты слоя уже благополучно расчитаны). """
         self.__subs_layer.weights = self.__weights_before_learning
         self.__subs_layer.biases = self.__biases_before_learning
         self.__subs_layer.calculate_outputs(self.__input_maps)
@@ -512,6 +570,9 @@ class TestSubsamplingLayer(unittest.TestCase):
                                    )
 
     def test_update_weights_and_biases_test_positive_2(self):
+        """ Проверить, как обновляются веса и смещения слоя с нулевым коэффициентом скорости
+        обучения после прямого распространения сигнала и обратного распространения ошибки (т.е.
+        выходы и градиенты слоя уже благополучно расчитаны). Правильный ответ - не меняются. """
         self.__subs_layer.weights = self.__weights_before_learning
         self.__subs_layer.biases = self.__biases_before_learning
         self.__subs_layer.calculate_outputs(self.__input_maps)
@@ -555,6 +616,10 @@ class TestSubsamplingLayer(unittest.TestCase):
                                    )
 
     def test_update_weights_and_biases_test_positive_3(self):
+        """ Проверить, как обновляются веса и смещения слоя с пустым (None) коэффициентом скорости
+        обучения после прямого распространения сигнала и обратного распространения ошибки (т.е.
+        выходы и градиенты слоя уже благополучно расчитаны). Правильный ответ - не меняются,
+        поскольку пустой коэффициент скорости обучения считается нулевым. """
         self.__subs_layer.weights = self.__weights_before_learning
         self.__subs_layer.biases = self.__biases_before_learning
         self.__subs_layer.calculate_outputs(self.__input_maps)
