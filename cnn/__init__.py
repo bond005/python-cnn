@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 
-__all__ = ['convolution_layer', 'subsampling_layer']
+__all__ = ['convolution_layer', 'subsampling_layer', 'output_layer']
 
 if sys.version_info < (3, 4):
     print("CNN requires Python >= 3.4")
