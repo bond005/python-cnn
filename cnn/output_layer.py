@@ -166,7 +166,7 @@ class OutputLayer:
 
     def initialize_weights_and_biases(self):
         """ Инициализировать все веса и смещения случайными значениями. """
-        neurons_number = len(self.__outpus)
+        neurons_number = len(self.__outputs)
         for neuron_ind in range(neurons_number):
             self.__weights_of_neurons[neuron_ind] = [
                 (numpy.random.random(self.__input_map_size) - 0.5) * 2.0 \
@@ -192,7 +192,7 @@ class OutputLayer:
             )
             self.__outputs[neuron_ind] = math.exp(output_of_accumulator)
             sum_of_outputs += self.__outputs[neuron_ind]
-        self.__outputs = map(lambda a: a / sum_of_outputs, self.__outputs)
+        self.__outputs = list(map(lambda a: a / sum_of_outputs, self.__outputs))
         return self.__outputs
 
     def calculate_gradient(self, target_outputs):
@@ -219,10 +219,14 @@ class OutputLayer:
         self.__check_input_maps_of_this_layer(input_maps)
         if learning_rate is None:
             return
-        self.__biases_of_neurons += [ cur_gradient * learning_rate
-                                      for cur_gradient in self.__gradients ]
-        self.__weights_of_neurons += map(lambda a, b: a * b * learning_rate,
-                                         input_maps, self.__gradients)
+        self.__biases_of_neurons = [ self.__biases_of_neurons[neuron_ind]
+                                     + self.__gradients[neuron_ind] * learning_rate
+                                     for neuron_ind in range(len(self.__outputs)) ]
+        for neuron_ind in range(len(self.__outputs)):
+            self.__weights_of_neurons[neuron_ind] = list(map(
+                lambda a, b: a * self.__gradients[neuron_ind] * learning_rate + b,
+                input_maps, self.__weights_of_neurons[neuron_ind]
+            ))
 
     def __check_input_maps_of_this_layer(self, input_maps):
         """ Проверить корректность структуры входных карт input_maps.
@@ -278,7 +282,7 @@ class OutputLayer:
                 raise EOutputLayerGradient(
                     self.__layer_id, 'Structure of target outputs is incorrect!'
                 )
-            if target_size[0] != len(self.__outputs)::
+            if target_size[0] != len(self.__outputs):
                 raise EOutputLayerGradient(
                     self.__layer_id, 'Number of target outputs is incorrect!'
                 )
@@ -292,7 +296,7 @@ class OutputLayer:
                         )
                     )
                 outputs_sum += target_outputs[ind]
-            if fabs(outputs_sum - 1.0) > epsilon:
+            if math.fabs(outputs_sum - 1.0) > epsilon:
                 raise EOutputLayerGradient(
                     self.__layer_id,
                     'Target outputs are incorrect! Sum of target outputs does not '\
@@ -320,7 +324,7 @@ class OutputLayer:
                         )
                     )
                 outputs_sum += target_outputs[ind]
-            if fabs(outputs_sum - 1.0) > epsilon:
+            if math.fabs(outputs_sum - 1.0) > epsilon:
                 raise EOutputLayerGradient(
                     self.__layer_id,
                     'Target outputs are incorrect! Sum of target outputs does not '\

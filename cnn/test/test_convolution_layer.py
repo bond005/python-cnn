@@ -395,7 +395,7 @@ class TestConvolutionLayer(unittest.TestCase):
         """ Смещения (biases) слоя - это обычный Python-список вещественных чисел, длина которого
         равна количеству фичемап в слое. А что, если мы не все значения этого списка будут
         вещественными? """
-        new_biases = [0.3, 2, 'a', -1]
+        new_biases = [0.3, 'a']
         with self.assertRaises(TypeError):
             self.__conv_layer.biases = new_biases
 

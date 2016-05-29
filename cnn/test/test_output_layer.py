@@ -738,50 +738,40 @@ class TestOutputLayer(unittest.TestCase):
 
     def test_biases_test_negative_2(self):
         """ Смещения (biases) слоя - это обычный Python-список вещественных чисел, длина которого
-        равна количеству фичемап в слое. А что, если мы не все значения этого списка будут
+        равна количеству нейронов в выходном слое. А что, если мы не все значения этого списка будут
         вещественными? """
-        new_biases = [0.3, 2, 'a', -1]
+        new_biases = [0.3, 2, 'a', -1, 0]
         with self.assertRaises(TypeError):
-            self.__conv_layer.biases = new_biases
+            self.__outp_layer.biases = new_biases
 
     def test_number_of_trainable_params(self):
         """ Проверить, что свойство number_of_trainable_params (количество обучаемых параметров
         слоя) возвращает правильное число. """
-        self.assertEqual(self.__conv_layer.number_of_trainable_params,
-                         (self.__receptive_field_size[0] * self.__receptive_field_size[1] \
-                          * self.__number_of_input_maps + 1) * self.__number_of_feature_maps)
+        self.assertEqual(self.__outp_layer.number_of_trainable_params,
+                         (self.__input_map_size[0] * self.__input_map_size[1] \
+                          * self.__number_of_input_maps + 1) * self.__number_of_neurons)
 
     def test_layer_id(self):
         """ Проверить, что идентификатор слоя установлен правильно, т.е. свойство layer_id
         возвращает именно то число, которое было установлено при создании этого слоя. """
-        self.assertEqual(self.__conv_layer.layer_id, self.__layer_id)
+        self.assertEqual(self.__outp_layer.layer_id, self.__layer_id)
 
     def test_calculate_outputs_test_positive_1(self):
         """ Проверить, что выходы (выходные карты) слоя рассчитываются правильно при подаче на вход
         заданных корректных входных сигналов (набора входных карт). """
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        calculated_outputs = self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.assertEqual(len(calculated_outputs), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: Number of calculated output maps is '\
-                         'incorrect!'.format(self.__number_of_feature_maps,
+        self.__outp_layer.weights = self.__weights_before_learning
+        self.__outp_layer.biases = self.__biases_before_learning
+        calculated_outputs = self.__outp_layer.calculate_outputs(self.__input_maps)
+        self.assertEqual(len(calculated_outputs), self.__number_of_neurons,
+                         msg = 'Target {0} != real {1}: Number of calculated outputs is '\
+                         'incorrect!'.format(self.__number_of_neurons,
                                              len(calculated_outputs))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertIsInstance(calculated_outputs[ft_ind], numpy.ndarray,
-                                  msg = 'Type of output map {0} is incorrect!'.format(ft_ind+1)
-                                  )
-            self.assertEqual(calculated_outputs[ft_ind].shape, self.__feature_map_size,
-                             msg = 'Target {0} != real {1}: Sizes of output map {2} is '\
-                             'incorrect!'.format(str(self.__feature_map_size),
-                                                 str(calculated_outputs[ft_ind].shape), ft_ind+1)
-                             )
-            for outp_ind in numpy.ndindex(self.__feature_map_size):
-                self.assertAlmostEqual(
-                    calculated_outputs[ft_ind][outp_ind],
-                    self.__target_outputs[ft_ind][outp_ind],
-                    msg = 'Output map {0} is incorrect!\n{1}'.format(
-                        ft_ind+1, str(calculated_outputs[ft_ind]))
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertAlmostEqual(
+                calculated_outputs[neuron_ind], self.__target_real_outputs[neuron_ind],
+                msg = 'Output of {0} neuron is incorrect!\n{1}'.format(integer_to_ordinal(neuron_ind+1),
+                                                                       str(calculated_outputs[neuron_ind]))
                 )
 
     def test_calculate_outputs_test_negative_1(self):
@@ -821,334 +811,239 @@ class TestOutputLayer(unittest.TestCase):
                 (-0.62173, -0.15969, 0.700956, 0.87735, 0.450899)
             ])
         ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.calculate_outputs(input_maps)
+        with self.assertRaises(output_layer.EOutputLayerCalculating):
+            self.__outp_layer.calculate_outputs(input_maps)
 
     def test_calculate_outputs_test_negative_2(self):
         """ Проверить ситуацию, когда входной сигнал некорректен - количество входных карт
         верное, но сами они неправильного размера. """
         input_maps = [
             numpy.array([
-                (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724),
-                (-0.68267, -0.09463, 0.614261, -0.50213, 0.565014),
-                (0.076374, -0.7649, -0.30093, 0.471437, -0.32848),
-                (-0.38347, 0.160011, -0.30884, 0.493158, -0.28132),
-                (-0.64146, -0.92638, 0.867563, -0.10696, -0.05661)
+                (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724, 0.0),
+                (-0.68267, -0.09463, 0.614261, -0.50213, 0.565014, 0.0),
+                (0.076374, -0.7649, -0.30093, 0.471437, -0.32848, 0.0),
+                (-0.38347, 0.160011, -0.30884, 0.493158, -0.28132, 0.0),
+                (-0.64146, -0.92638, 0.867563, -0.10696, -0.05661, 0.0),
+                (0.422351, -0.06871, 0.186391, -0.49686, 0.870728, 0.0)
             ]),
             numpy.array([
-                (-0.20349, 0.031203, -0.12173, 0.743632, 0.328677),
-                (-0.20938, 0.00954, 0.517926, 0.607911, 0.535574),
-                (0.808547, 0.074892, -0.54315, -0.34995, 0.639988),
-                (0.773657, -0.29811, -0.13906, -0.51, -0.00329),
-                (-0.27878, 0.498802, -0.15015, 0.823873, 0.800871)
+                (-0.20349, 0.031203, -0.12173, 0.743632, 0.328677, 0.0),
+                (-0.20938, 0.00954, 0.517926, 0.607911, 0.535574, 0.0),
+                (0.808547, 0.074892, -0.54315, -0.34995, 0.639988, 0.0),
+                (0.773657, -0.29811, -0.13906, -0.51, -0.00329, 0.0),
+                (-0.27878, 0.498802, -0.15015, 0.823873, 0.800871, 0.0),
+                (0.100963, 0.540328, -0.4175, -0.13177, 0.149454, 0.0)
             ]),
             numpy.array([
-                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333),
-                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149),
-                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361),
-                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865),
-                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176)
+                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333, 0.0),
+                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149, 0.0),
+                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361, 0.0),
+                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865, 0.0),
+                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176, 0.0),
+                (-0.62173, -0.15969, 0.700956, 0.87735, 0.450899, 0.0)
             ])
         ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.calculate_outputs(input_maps)
+        with self.assertRaises(output_layer.EOutputLayerCalculating):
+            self.__outp_layer.calculate_outputs(input_maps)
 
     def test_calculate_outputs_test_negative_3(self):
         """ Проверить ситуацию, когда входной сигнал - ничто. """
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.calculate_outputs(None)
+        with self.assertRaises(output_layer.EOutputLayerCalculating):
+            self.__outp_layer.calculate_outputs(None)
 
     def test_calculate_gradient_test_positive_1(self):
-        """ Проверить, как расчитываются карты градиентов слоя, когда все входные данные (весовые
-        коэффициенты, карты градиентов и размеры рецептивного поля следующего слоя) корректны. """
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        calculated_gradients = self.__conv_layer.gradients
-        self.assertEqual(len(calculated_gradients), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: Number of calculated output maps is '\
-                         'incorrect!'.format(self.__number_of_feature_maps,
+        """ Проверить, как расчитываются градиенты нейронов слоя, когда желаемые выходные сигналы
+        нейронной сети заданы корректно и являются Python-массивом вещественных чисел. """
+        self.__outp_layer.weights = self.__weights_before_learning
+        self.__outp_layer.biases = self.__biases_before_learning
+        self.__outp_layer.calculate_outputs(self.__input_maps)
+        self.__outp_layer.calculate_gradient(self.__target_target_outputs)
+        calculated_gradients = self.__outp_layer.gradients
+        self.assertEqual(len(calculated_gradients), self.__number_of_neurons,
+                         msg = 'Target {0} != real {1}: Number of calculated outputs is '\
+                         'incorrect!'.format(self.__number_of_neurons,
                                              len(calculated_gradients))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertIsInstance(calculated_gradients[ft_ind], numpy.ndarray,
-                                  msg = 'Type of gradient map {0} is incorrect!'.format(ft_ind+1)
-                                  )
-            self.assertEqual(calculated_gradients[ft_ind].shape, self.__feature_map_size,
-                             msg = 'Target {0} != real {1}: Sizes of gradient map {2} is '\
-                             'incorrect!'.format(str(self.__feature_map_size),
-                                                 str(calculated_gradients[ft_ind].shape), ft_ind+1)
-                             )
-            for outp_ind in numpy.ndindex(self.__feature_map_size):
-                self.assertAlmostEqual(
-                    calculated_gradients[ft_ind][outp_ind],
-                    self.__target_gradients[ft_ind][outp_ind],
-                    msg = 'Gradient map {0} is incorrect!\n{1}'.format(
-                        ft_ind+1, str(calculated_gradients[ft_ind]))
-                )
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertAlmostEqual(
+                calculated_gradients[neuron_ind],
+                self.__target_gradients[neuron_ind],
+                msg = 'Gradient of {0} neuron is incorrect!\n{1}'.format(
+                    integer_to_ordinal(neuron_ind+1), str(calculated_gradients[neuron_ind]))
+            )
+
+    def test_calculate_gradient_test_positive_2(self):
+        """ Проверить, как расчитываются градиенты нейронов слоя, когда желаемые выходные сигналы
+        нейронной сети заданы корректно и являются одномерным NumPy-массивом вещественных чисел. """
+        self.__outp_layer.weights = self.__weights_before_learning
+        self.__outp_layer.biases = self.__biases_before_learning
+        self.__outp_layer.calculate_outputs(self.__input_maps)
+        self.__outp_layer.calculate_gradient(numpy.array(self.__target_target_outputs))
+        calculated_gradients = self.__outp_layer.gradients
+        self.assertEqual(len(calculated_gradients), self.__number_of_neurons,
+                         msg='Target {0} != real {1}: Number of calculated outputs is ' \
+                             'incorrect!'.format(self.__number_of_neurons,
+                                                 len(calculated_gradients))
+                         )
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertAlmostEqual(
+                calculated_gradients[neuron_ind],
+                self.__target_gradients[neuron_ind],
+                msg='Gradient of {0} neuron is incorrect!\n{1}'.format(
+                    integer_to_ordinal(neuron_ind + 1), str(calculated_gradients[neuron_ind]))
+            )
 
     def test_calculate_gradient_test_negative_1(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты и карты
-        градиентов следующего слоя заданы корректно, а вот вместо размеров рецептивного поля
-        следующего слоя задано ничто. """
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                                 self.__gradients_of_next_subsampling_layer, None)
+        """ Проверить метод расчёта градиентов нейронов слоя, когда вместо желаемых выходных
+        сигналов нейронной сети задано ничто. """
+        with self.assertRaises(output_layer.EOutputLayerGradient):
+            self.__outp_layer.calculate_gradient(None)
 
     def test_calculate_gradient_test_negative_2(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты и размеры
-        рецептивного поля следующего слоя заданы корректно, а вот вместо карт градиентов следующего
-        слоя задано ничто. """
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(
-                self.__weights_of_next_subsampling_layer, None,
-                self.__receptive_field_size_of_next_subsampling_layer
-            )
+        """ Проверить метод расчёта градиентов нейронов слоя, когда размер массива с желаемыми
+        выходными сигналами нейронной сети задан верно, но вот значения этого массива иногда
+        являются фигнёй. """
+        target_outputs = [random.random() for neuron_ind in range(self.__number_of_neurons)]
+        target_outputs[0] = 'a'
+        with self.assertRaises(output_layer.EOutputLayerGradient):
+            self.__outp_layer.calculate_gradient(target_outputs)
 
     def test_calculate_gradient_test_negative_3(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда карты градиентов и размеры
-        рецептивного поля следующего слоя заданы корректно, а вот вместо весовых коэффициентов
-        следующего слоя задано ничто. """
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(
-                None, self.__gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
-            )
+        """ Проверить метод расчёта градиентов нейронов слоя, когда размер массива с желаемыми
+        выходными сигналами нейронной сети слишком велик. """
+        target_outputs = [random.random() for neuron_ind in range(self.__number_of_neurons+2)]
+        with self.assertRaises(output_layer.EOutputLayerGradient):
+            self.__outp_layer.calculate_gradient(target_outputs)
 
     def test_calculate_gradient_test_negative_4(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда размер рецептивного поля следующего
-        слоя задан некорректно (слишком маленький, меньше ожидаемого). """
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                                 self.__gradients_of_next_subsampling_layer, (1,1))
-
-    def test_calculate_gradient_test_negative_5(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда размер рецептивного поля следующего
-        слоя задан некорректно (высота больше ожидаемой). """
-        receptive_field_size_of_next_subsampling_layer = (
-            self.__receptive_field_size_of_next_subsampling_layer[0] + 1,
-            self.__receptive_field_size_of_next_subsampling_layer[1]
-        )
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                                 self.__gradients_of_next_subsampling_layer,
-                                                 receptive_field_size_of_next_subsampling_layer)
-
-    def test_calculate_gradient_test_negative_6(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда размер рецептивного поля следующего
-        слоя задан некорректно (ширина больше ожидаемой). """
-        receptive_field_size_of_next_subsampling_layer = (
-            self.__receptive_field_size_of_next_subsampling_layer[0],
-            self.__receptive_field_size_of_next_subsampling_layer[1] + 1
-        )
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                                 self.__gradients_of_next_subsampling_layer,
-                                                 receptive_field_size_of_next_subsampling_layer)
-
-    def test_calculate_gradient_test_negative_7(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда карты градиентов следующего
-        слоя заданы некорректно (карта градиентов является не NumPy-матрицей, а просто двумерным
-        Python-списком вещественных чисел). """
-        gradients_of_next_subsampling_layer = [
-            [
-                [-0.1286712969, -0.125479926, -0.003086782247, -0.1086308843],
-                [-0.08315078815, -0.009573529862, -0.1010244168, -0.0352610562],
-                [-0.03876598933, -0.04130841688, -0.1998880078, -0.09058377658],
-                [-0.002631869866, -0.004921958989, -0.2117603566, -0.0050498571]
-            ],
-            [
-                [0.6823529444, 0.824381655, 0.07685288204, 0.2442252885],
-                [0.3639761863, 0.8162241735, 0.08305237473, 0.1132151781],
-                [0.06970962401, 0.1309469792, 0.02689007509, 0.07302474399],
-                [0.5294916584, 0.3682499105, 0.04419765396, 0.08306412725]
-            ]
-        ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(
-                self.__weights_of_next_subsampling_layer,
-                gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
-            )
-
-    def test_calculate_gradient_test_negative_8(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда карты градиентов следующего
-        слоя заданы некорректно (карты градиентов действительно являются NumPy-матрицами, но вот
-        беда - этих матриц больше, чем надо). """
-        gradients_of_next_subsampling_layer = [
-            numpy.array([
-                (-0.1286712969, -0.125479926, -0.003086782247, -0.1086308843),
-                (-0.08315078815, -0.009573529862, -0.1010244168, -0.0352610562),
-                (-0.03876598933, -0.04130841688, -0.1998880078, -0.09058377658),
-                (-0.002631869866, -0.004921958989, -0.2117603566, -0.0050498571)
-            ]),
-            numpy.array([
-                (0.6823529444, 0.824381655, 0.07685288204, 0.2442252885),
-                (0.3639761863, 0.8162241735, 0.08305237473, 0.1132151781),
-                (0.06970962401, 0.1309469792, 0.02689007509, 0.07302474399),
-                (0.5294916584, 0.3682499105, 0.04419765396, 0.08306412725)
-            ]),
-            numpy.array([
-                (0.6823529444, 0.824381655, 0.07685288204, 0.2442252885),
-                (0.3639761863, 0.8162241735, 0.08305237473, 0.1132151781),
-                (0.06970962401, 0.1309469792, 0.02689007509, 0.07302474399),
-                (0.5294916584, 0.3682499105, 0.04419765396, 0.08306412725)
-            ])
-        ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(
-                self.__weights_of_next_subsampling_layer,
-                gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
-            )
-
-    def test_calculate_gradient_test_negative_9(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты следующего
-        слоя заданы некорректно (они действительно являются списком вещественных чисел, но вот длина
-        этого списка больше, чем надо). """
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(
-                [0.0, 0.0, 0.0],
-                self.__gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
-            )
-
-    def test_calculate_gradient_test_negative_10(self):
-        """ Проверить метод расчёта карт градиентов слоя, когда весовые коэффициенты следующего
-        слоя заданы некорректно (они действительно являются списком нужной длины, но вот не все
-        элементы этого списка являются вещественными числами). """
-        with self.assertRaises(convolution_layer.EConvolutionLayerGradient):
-            self.__conv_layer.calculate_gradient(
-                [0.0, 'a'],
-                self.__gradients_of_next_subsampling_layer,
-                self.__receptive_field_size_of_next_subsampling_layer
-            )
+        """ Проверить метод расчёта градиентов нейронов слоя, когда размер массива с желаемыми
+        выходными сигналами нейронной сети слишком велик, а сам массив при этом является
+        одномерным NumPy-массивом. """
+        target_outputs = numpy.array([random.random()
+                                      for neuron_ind in range(self.__number_of_neurons+2)])
+        with self.assertRaises(output_layer.EOutputLayerGradient):
+            self.__outp_layer.calculate_gradient(target_outputs)
 
     def test_update_weights_and_biases_test_positive_1(self):
         """ Проверить, как обновляются веса и смещения слоя с заданным коэффициентом скорости
         обучения после прямого распространения сигнала и обратного распространения ошибки (т.е.
         выходы и градиенты слоя уже благополучно расчитаны). """
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        self.__conv_layer.update_weights_and_biases(self.__learning_rate, self.__input_maps)
-        new_weights = self.__conv_layer.weights
-        self.assertEqual(len(new_weights), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'convolution kernels is incorrect!'.format(self.__number_of_feature_maps,
+        self.__outp_layer.weights = self.__weights_before_learning
+        self.__outp_layer.biases = self.__biases_before_learning
+        self.__outp_layer.calculate_outputs(self.__input_maps)
+        self.__outp_layer.calculate_gradient(self.__target_target_outputs)
+        self.__outp_layer.update_weights_and_biases(self.__learning_rate, self.__input_maps)
+        new_weights = self.__outp_layer.weights
+        self.assertEqual(len(new_weights), self.__number_of_neurons,
+                         msg = 'Target {0} != real {1}: number of neurons with updated '\
+                         'convolution kernels is incorrect!'.format(self.__number_of_neurons,
                                                                     len(new_weights))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertEqual(len(new_weights[ft_ind]), self.__number_of_input_maps,
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertEqual(len(new_weights[neuron_ind]), self.__number_of_input_maps,
                              msg = 'Target {0} != real {1}: number of updated convolution kernels '\
-                             'of {2} feature map is incorrect!'.format(
-                                 self.__number_of_input_maps, len(new_weights[ft_ind]),
-                                 integer_to_ordinal(ft_ind+1))
+                             'of {2} neuron is incorrect!'.format(
+                                 self.__number_of_input_maps, len(new_weights[neuron_ind]),
+                                 integer_to_ordinal(neuron_ind + 1))
                              )
             for inp_ind in range(self.__number_of_input_maps):
-                self.assertIsInstance(new_weights[ft_ind][inp_ind], numpy.ndarray,
-                                      msg = 'Type of {0} convolution kernel of {1} feature map is '\
-                                      'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                          integer_to_ordinal(ft_ind+1))
+                self.assertIsInstance(new_weights[neuron_ind][inp_ind], numpy.ndarray,
+                                      msg = 'Type of {0} convolution kernel of {1} neuron is '\
+                                      'incorrect!'.format(integer_to_ordinal(inp_ind + 1),
+                                                          integer_to_ordinal(neuron_ind + 1))
                                       )
-                self.assertEqual(new_weights[ft_ind][inp_ind].shape, self.__receptive_field_size,
-                                 msg = 'Sizes of {0} convolution kernel of {1} feature map are '\
+                self.assertEqual(new_weights[neuron_ind][inp_ind].shape, self.__input_map_size,
+                                 msg = 'Sizes of {0} convolution kernel of {1} neuron are '\
                                  'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                     integer_to_ordinal(ft_ind+1))
+                                                     integer_to_ordinal(neuron_ind+1))
                                  )
-                for ind in numpy.ndindex(self.__receptive_field_size):
+                for ind in numpy.ndindex(self.__input_map_size):
                     self.assertAlmostEqual(
-                        new_weights[ft_ind][inp_ind][ind],
-                        self.__weights_after_learning[ft_ind][inp_ind][ind],
-                        msg = 'Values of {0} convolution kernel of {1} feature map are '\
+                        new_weights[neuron_ind][inp_ind][ind],
+                        self.__weights_after_learning[neuron_ind][inp_ind][ind],
+                        msg = 'Values of {0} convolution kernel of {1} neuron are '\
                         'incorrect!\n{2}'.format(
-                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(ft_ind+1),
-                            str(new_weights[ft_ind][inp_ind]))
+                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(neuron_ind+1),
+                            str(new_weights[neuron_ind][inp_ind]))
                     )
-        new_biases = self.__conv_layer.biases
-        self.assertEqual(len(new_biases), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'biases is incorrect!'.format(self.__number_of_feature_maps,
+        new_biases = self.__outp_layer.biases
+        self.assertEqual(len(new_biases), self.__number_of_neurons,
+                         msg = 'Target {0} != real {1}: number of neurons with updated '\
+                         'biases is incorrect!'.format(self.__number_of_neurons,
                                                        len(new_biases))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertIsInstance(new_biases[ft_ind], float,
-                                  msg = 'Type of {0} feature map\'s bias is incorrect'.format(
-                                      integer_to_ordinal(ft_ind+1))
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertIsInstance(new_biases[neuron_ind], float,
+                                  msg = 'Type of {0} neuron\'s bias is incorrect'.format(
+                                      integer_to_ordinal(neuron_ind+1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_after_learning[ft_ind],
-                                   msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
-                                   ' is incorrect'.format(self.__biases_before_learning[ft_ind],
-                                                          new_biases[ft_ind],
-                                                          integer_to_ordinal(ft_ind+1))
+            self.assertAlmostEqual(new_biases[neuron_ind],
+                                   self.__biases_after_learning[neuron_ind],
+                                   msg = 'Target {0} != real {1}: value of {2} neuron\'s bias'\
+                                   ' is incorrect'.format(self.__biases_after_learning[neuron_ind],
+                                                          new_biases[neuron_ind],
+                                                          integer_to_ordinal(neuron_ind+1))
                                    )
 
     def test_update_weights_and_biases_test_positive_2(self):
         """ Проверить, как обновляются веса и смещения слоя с нулевым коэффициентом скорости
         обучения после прямого распространения сигнала и обратного распространения ошибки (т.е.
         выходы и градиенты слоя уже благополучно расчитаны). Правильный ответ - не меняются. """
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        self.__conv_layer.update_weights_and_biases(0.0, self.__input_maps)
-        new_weights = self.__conv_layer.weights
-        self.assertEqual(len(new_weights), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'convolution kernels is incorrect!'.format(self.__number_of_feature_maps,
-                                                                    len(new_weights))
+        self.__outp_layer.weights = self.__weights_before_learning
+        self.__outp_layer.biases = self.__biases_before_learning
+        self.__outp_layer.calculate_outputs(self.__input_maps)
+        self.__outp_layer.calculate_gradient(self.__target_target_outputs)
+        self.__outp_layer.update_weights_and_biases(0.0, self.__input_maps)
+        new_weights = self.__outp_layer.weights
+        self.assertEqual(len(new_weights), self.__number_of_neurons,
+                         msg='Target {0} != real {1}: number of neurons with updated ' \
+                             'convolution kernels is incorrect!'.format(self.__number_of_neurons,
+                                                                        len(new_weights))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertEqual(len(new_weights[ft_ind]), self.__number_of_input_maps,
-                             msg = 'Target {0} != real {1}: number of updated convolution kernels '\
-                             'of {2} feature map is incorrect!'.format(
-                                 self.__number_of_input_maps, len(new_weights[ft_ind]),
-                                 integer_to_ordinal(ft_ind+1))
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertEqual(len(new_weights[neuron_ind]), self.__number_of_input_maps,
+                             msg='Target {0} != real {1}: number of updated convolution kernels ' \
+                                 'of {2} neuron is incorrect!'.format(
+                                 self.__number_of_input_maps, len(new_weights[neuron_ind]),
+                                 integer_to_ordinal(neuron_ind + 1))
                              )
             for inp_ind in range(self.__number_of_input_maps):
-                self.assertIsInstance(new_weights[ft_ind][inp_ind], numpy.ndarray,
-                                      msg = 'Type of {0} convolution kernel of {1} feature map is '\
-                                      'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                          integer_to_ordinal(ft_ind+1))
+                self.assertIsInstance(new_weights[neuron_ind][inp_ind], numpy.ndarray,
+                                      msg='Type of {0} convolution kernel of {1} neuron is ' \
+                                          'incorrect!'.format(integer_to_ordinal(inp_ind + 1),
+                                                              integer_to_ordinal(neuron_ind + 1))
                                       )
-                self.assertEqual(new_weights[ft_ind][inp_ind].shape, self.__receptive_field_size,
-                                 msg = 'Sizes of {0} convolution kernel of {1} feature map are '\
-                                 'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                     integer_to_ordinal(ft_ind+1))
+                self.assertEqual(new_weights[neuron_ind][inp_ind].shape, self.__input_map_size,
+                                 msg='Sizes of {0} convolution kernel of {1} neuron are ' \
+                                     'incorrect!'.format(integer_to_ordinal(inp_ind + 1),
+                                                         integer_to_ordinal(neuron_ind + 1))
                                  )
-                for ind in numpy.ndindex(self.__receptive_field_size):
+                for ind in numpy.ndindex(self.__input_map_size):
                     self.assertAlmostEqual(
-                        new_weights[ft_ind][inp_ind][ind],
-                        self.__weights_before_learning[ft_ind][inp_ind][ind],
-                        msg = 'Values of {0} convolution kernel of {1} feature map are '\
-                        'incorrect!\n{2}'.format(
-                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(ft_ind+1),
-                            str(new_weights[ft_ind][inp_ind]))
+                        new_weights[neuron_ind][inp_ind][ind],
+                        self.__weights_before_learning[neuron_ind][inp_ind][ind],
+                        msg='Values of {0} convolution kernel of {1} neuron are ' \
+                            'incorrect!\n{2}'.format(
+                            integer_to_ordinal(inp_ind + 1), integer_to_ordinal(neuron_ind + 1),
+                            str(new_weights[neuron_ind][inp_ind]))
                     )
-        new_biases = self.__conv_layer.biases
-        self.assertEqual(len(new_biases), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'biases is incorrect!'.format(self.__number_of_feature_maps,
-                                                       len(new_biases))
+        new_biases = self.__outp_layer.biases
+        self.assertEqual(len(new_biases), self.__number_of_neurons,
+                         msg='Target {0} != real {1}: number of neurons with updated ' \
+                             'biases is incorrect!'.format(self.__number_of_neurons,
+                                                           len(new_biases))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertIsInstance(new_biases[ft_ind], float,
-                                  msg = 'Type of {0} feature map\'s bias is incorrect'.format(
-                                      integer_to_ordinal(ft_ind+1))
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertIsInstance(new_biases[neuron_ind], float,
+                                  msg='Type of {0} neuron\'s bias is incorrect'.format(
+                                      integer_to_ordinal(neuron_ind + 1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_before_learning[ft_ind],
-                                   msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
-                                   ' is incorrect'.format(self.__biases_before_learning[ft_ind],
-                                                          new_biases[ft_ind],
-                                                          integer_to_ordinal(ft_ind+1))
+            self.assertAlmostEqual(new_biases[neuron_ind],
+                                   self.__biases_before_learning[neuron_ind],
+                                   msg='Target {0} != real {1}: value of {2} neuron\'s bias' \
+                                       ' is incorrect'.format(self.__biases_before_learning[neuron_ind],
+                                                              new_biases[neuron_ind],
+                                                              integer_to_ordinal(neuron_ind + 1))
                                    )
 
     def test_update_weights_and_biases_test_positive_3(self):
@@ -1156,62 +1051,61 @@ class TestOutputLayer(unittest.TestCase):
         обучения после прямого распространения сигнала и обратного распространения ошибки (т.е.
         выходы и градиенты слоя уже благополучно расчитаны). Правильный ответ - не меняются,
         поскольку пустой коэффициент скорости обучения считается нулевым. """
-        self.__conv_layer.weights = self.__weights_before_learning
-        self.__conv_layer.biases = self.__biases_before_learning
-        self.__conv_layer.calculate_outputs(self.__input_maps)
-        self.__conv_layer.calculate_gradient(self.__weights_of_next_subsampling_layer,
-                                             self.__gradients_of_next_subsampling_layer,
-                                             self.__receptive_field_size_of_next_subsampling_layer)
-        self.__conv_layer.update_weights_and_biases(None, self.__input_maps)
-        new_weights = self.__conv_layer.weights
-        self.assertEqual(len(new_weights), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'convolution kernels is incorrect!'.format(self.__number_of_feature_maps,
-                                                                    len(new_weights))
+        self.__outp_layer.weights = self.__weights_before_learning
+        self.__outp_layer.biases = self.__biases_before_learning
+        self.__outp_layer.calculate_outputs(self.__input_maps)
+        self.__outp_layer.calculate_gradient(self.__target_target_outputs)
+        self.__outp_layer.update_weights_and_biases(None, self.__input_maps)
+        new_weights = self.__outp_layer.weights
+        self.assertEqual(len(new_weights), self.__number_of_neurons,
+                         msg='Target {0} != real {1}: number of neurons with updated ' \
+                             'convolution kernels is incorrect!'.format(self.__number_of_neurons,
+                                                                        len(new_weights))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertEqual(len(new_weights[ft_ind]), self.__number_of_input_maps,
-                             msg = 'Target {0} != real {1}: number of updated convolution kernels '\
-                             'of {2} feature map is incorrect!'.format(
-                                 self.__number_of_input_maps, len(new_weights[ft_ind]),
-                                 integer_to_ordinal(ft_ind+1))
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertEqual(len(new_weights[neuron_ind]), self.__number_of_input_maps,
+                             msg='Target {0} != real {1}: number of updated convolution kernels ' \
+                                 'of {2} neuron is incorrect!'.format(
+                                 self.__number_of_input_maps, len(new_weights[neuron_ind]),
+                                 integer_to_ordinal(neuron_ind + 1))
                              )
             for inp_ind in range(self.__number_of_input_maps):
-                self.assertIsInstance(new_weights[ft_ind][inp_ind], numpy.ndarray,
-                                      msg = 'Type of {0} convolution kernel of {1} feature map is '\
-                                      'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                          integer_to_ordinal(ft_ind+1))
+                self.assertIsInstance(new_weights[neuron_ind][inp_ind], numpy.ndarray,
+                                      msg='Type of {0} convolution kernel of {1} neuron is ' \
+                                          'incorrect!'.format(integer_to_ordinal(inp_ind + 1),
+                                                              integer_to_ordinal(neuron_ind + 1))
                                       )
-                self.assertEqual(new_weights[ft_ind][inp_ind].shape, self.__receptive_field_size,
-                                 msg = 'Sizes of {0} convolution kernel of {1} feature map are '\
-                                 'incorrect!'.format(integer_to_ordinal(inp_ind+1),
-                                                     integer_to_ordinal(ft_ind+1))
+                self.assertEqual(new_weights[neuron_ind][inp_ind].shape, self.__input_map_size,
+                                 msg='Sizes of {0} convolution kernel of {1} neuron are ' \
+                                     'incorrect!'.format(integer_to_ordinal(inp_ind + 1),
+                                                         integer_to_ordinal(neuron_ind + 1))
                                  )
-                for ind in numpy.ndindex(self.__receptive_field_size):
+                for ind in numpy.ndindex(self.__input_map_size):
                     self.assertAlmostEqual(
-                        new_weights[ft_ind][inp_ind][ind],
-                        self.__weights_before_learning[ft_ind][inp_ind][ind],
-                        msg = 'Values of {0} convolution kernel of {1} feature map are '\
-                        'incorrect!\n{2}'.format(
-                            integer_to_ordinal(inp_ind+1), integer_to_ordinal(ft_ind+1),
-                            str(new_weights[ft_ind][inp_ind]))
+                        new_weights[neuron_ind][inp_ind][ind],
+                        self.__weights_before_learning[neuron_ind][inp_ind][ind],
+                        msg='Values of {0} convolution kernel of {1} neuron are ' \
+                            'incorrect!\n{2}'.format(
+                            integer_to_ordinal(inp_ind + 1), integer_to_ordinal(neuron_ind + 1),
+                            str(new_weights[neuron_ind][inp_ind]))
                     )
-        new_biases = self.__conv_layer.biases
-        self.assertEqual(len(new_biases), self.__number_of_feature_maps,
-                         msg = 'Target {0} != real {1}: number of feature maps with updated '\
-                         'biases is incorrect!'.format(self.__number_of_feature_maps,
-                                                       len(new_biases))
+        new_biases = self.__outp_layer.biases
+        self.assertEqual(len(new_biases), self.__number_of_neurons,
+                         msg='Target {0} != real {1}: number of neurons with updated ' \
+                             'biases is incorrect!'.format(self.__number_of_neurons,
+                                                           len(new_biases))
                          )
-        for ft_ind in range(self.__number_of_feature_maps):
-            self.assertIsInstance(new_biases[ft_ind], float,
-                                  msg = 'Type of {0} feature map\'s bias is incorrect'.format(
-                                      integer_to_ordinal(ft_ind+1))
+        for neuron_ind in range(self.__number_of_neurons):
+            self.assertIsInstance(new_biases[neuron_ind], float,
+                                  msg='Type of {0} neuron\'s bias is incorrect'.format(
+                                      integer_to_ordinal(neuron_ind + 1))
                                   )
-            self.assertAlmostEqual(new_biases[ft_ind], self.__biases_before_learning[ft_ind],
-                                   msg = 'Target {0} != real {1}: value of {2} feature map\'s bias'\
-                                   ' is incorrect'.format(self.__biases_before_learning[ft_ind],
-                                                          new_biases[ft_ind],
-                                                          integer_to_ordinal(ft_ind+1))
+            self.assertAlmostEqual(new_biases[neuron_ind],
+                                   self.__biases_before_learning[neuron_ind],
+                                   msg='Target {0} != real {1}: value of {2} neuron\'s bias' \
+                                       ' is incorrect'.format(self.__biases_before_learning[neuron_ind],
+                                                              new_biases[neuron_ind],
+                                                              integer_to_ordinal(neuron_ind + 1))
                                    )
 
     def test_update_weights_and_biases_test_negative_1(self):
@@ -1251,8 +1145,8 @@ class TestOutputLayer(unittest.TestCase):
                 (-0.62173, -0.15969, 0.700956, 0.87735, 0.450899)
             ])
         ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.update_weights_and_biases(self.__learning_rate, input_maps)
+        with self.assertRaises(output_layer.EOutputLayerCalculating):
+            self.__outp_layer.update_weights_and_biases(self.__learning_rate, input_maps)
 
     def test_update_weights_and_biases_test_negative_2(self):
         """ Что делать, когда мы хотим обучить слой (обновить веса и смещения) после прямого и
@@ -1260,35 +1154,38 @@ class TestOutputLayer(unittest.TestCase):
         нужно, но они не такого размера. """
         input_maps = [
             numpy.array([
-                (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724),
-                (-0.68267, -0.09463, 0.614261, -0.50213, 0.565014),
-                (0.076374, -0.7649, -0.30093, 0.471437, -0.32848),
-                (-0.38347, 0.160011, -0.30884, 0.493158, -0.28132),
-                (-0.64146, -0.92638, 0.867563, -0.10696, -0.05661)
+                (-0.14062, 0.293809, 0.905852, -0.45878, 0.740724, 0.0),
+                (-0.68267, -0.09463, 0.614261, -0.50213, 0.565014, 0.0),
+                (0.076374, -0.7649, -0.30093, 0.471437, -0.32848, 0.0),
+                (-0.38347, 0.160011, -0.30884, 0.493158, -0.28132, 0.0),
+                (-0.64146, -0.92638, 0.867563, -0.10696, -0.05661, 0.0),
+                (0.422351, -0.06871, 0.186391, -0.49686, 0.870728, 0.0)
             ]),
             numpy.array([
-                (-0.20349, 0.031203, -0.12173, 0.743632, 0.328677),
-                (-0.20938, 0.00954, 0.517926, 0.607911, 0.535574),
-                (0.808547, 0.074892, -0.54315, -0.34995, 0.639988),
-                (0.773657, -0.29811, -0.13906, -0.51, -0.00329),
-                (-0.27878, 0.498802, -0.15015, 0.823873, 0.800871)
+                (-0.20349, 0.031203, -0.12173, 0.743632, 0.328677, 0.0),
+                (-0.20938, 0.00954, 0.517926, 0.607911, 0.535574, 0.0),
+                (0.808547, 0.074892, -0.54315, -0.34995, 0.639988, 0.0),
+                (0.773657, -0.29811, -0.13906, -0.51, -0.00329, 0.0),
+                (-0.27878, 0.498802, -0.15015, 0.823873, 0.800871, 0.0),
+                (0.100963, 0.540328, -0.4175, -0.13177, 0.149454, 0.0)
             ]),
             numpy.array([
-                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333),
-                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149),
-                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361),
-                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865),
-                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176)
+                (-0.79188, 0.276618, -0.43735, -0.72712, -0.85333, 0.0),
+                (-0.63524, -0.39295, 0.667738, -0.7939, 0.728149, 0.0),
+                (-0.7309, 0.15348, -0.78023, -0.05637, -0.56361, 0.0),
+                (-0.02899, 0.209677, 0.162097, 0.481749, 0.270865, 0.0),
+                (-0.92895, 0.193228, -0.10883, 0.21654, -0.25176, 0.0),
+                (-0.62173, -0.15969, 0.700956, 0.87735, 0.450899, 0.0)
             ])
         ]
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.update_weights_and_biases(self.__learning_rate, input_maps)
+        with self.assertRaises(output_layer.EOutputLayerCalculating):
+            self.__outp_layer.update_weights_and_biases(self.__learning_rate, input_maps)
 
     def test_update_weights_and_biases_test_negative_3(self):
         """ Что делать, когда мы хотим обучить слой (обновить веса и смещения) после прямого и
         обратного прохода, а входной сигнал для слоя попросту пуст, ничто, None. """
-        with self.assertRaises(convolution_layer.EConvolutionLayerCalculating):
-            self.__conv_layer.update_weights_and_biases(self.__learning_rate, None)
+        with self.assertRaises(output_layer.EOutputLayerCalculating):
+            self.__outp_layer.update_weights_and_biases(self.__learning_rate, None)
 
 
 if __name__ == '__main__':
