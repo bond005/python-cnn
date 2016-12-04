@@ -5,7 +5,6 @@
 # https://docs.google.com/spreadsheets/d/1KXuLShbVoL2kaRFOCbTMkS-BNMuc3xVwZA8HwAuShno/edit?usp=sharing
 #
 
-import copy
 import os
 import random
 import sys
