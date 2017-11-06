@@ -24,13 +24,26 @@ class ECNNTraining(ENeuralNetworkException):
 class CNNClassifier:
     def __init__(self, input_maps_number, input_map_size, structure_of_hidden_layers, classes_number,
                  max_epochs_number=10, learning_rate=0.0001, early_stopping=True, validation_fraction=0.1):
+        """ Конструктор свёрточной нейронной сети.
+        :param input_maps_number - количество входных карт (например, одна для распознавания монохромных изображений
+        или три для распознавания цветных изображений).
+        :param input_map_size - размер одной входной карты (2-элементный кортеж: ширина и высота).
+        :param structure_of_hidden_layers - структура скрытых слоёв в виде кортежа, состоящего всегда из чётного числа
+        элементов, каждый из которых описывает параметры соответствующего слоя свёртки или подвыборки
+        (`feature_maps_number`, `feature_map_size` и `receptive_field_size`).
+        :param classes_number - число распознаваемых классов (не менее 2).
+        :param max_epochs_number - максимальное число эпох обучения.
+        :param learning_rate - коэффициент скорости обучения (положительное вещественное число, как правило, небольшое).
+        :param early_stopping - использовать ли ранний останов (True - да, False - нет).
+        :param validation_fraction - доля обучающего множества, используемая для раннего останова
+        (вещественное число больше нуля, но меньше единицы).
+        """
         if max_epochs_number < 1:
             raise ECNNCreating('Maximal number of training epochs is specified incorrectly!')
         if learning_rate <= 0.0:
             raise ECNNCreating('Learning rate parameter is specified incorrectly!')
-        if early_stopping:
-            if (validation_fraction <= 0.0) or (validation_fraction >= 1.0):
-                raise ECNNCreating('Validation fraction is specified incorrectly!')
+        if (validation_fraction <= 0.0) or (validation_fraction >= 1.0):
+            raise ECNNCreating('Validation fraction is specified incorrectly!')
         if (input_maps_number < 1) or (len(input_map_size) != 2):
             raise ECNNCreating('Input maps for CNN are specified incorrectly!')
         if (input_map_size[0] < 1) or (input_map_size[1] < 1):
@@ -62,7 +75,7 @@ class CNNClassifier:
         )
         if tuple(self.__layers[0].input_map_size) != tuple(input_map_size):
             raise ECNNCreating('Structure of layer 1 does not correspond to structure of input maps!')
-        for ind in range(number_of_hidden_layers / 2 - 1):
+        for ind in range(number_of_hidden_layers // 2 - 1):
             hidden_layer_ind = ind * 2 + 1
             self.__layers.append(
                 SubsamplingLayer(hidden_layer_ind + 1,
@@ -71,6 +84,11 @@ class CNNClassifier:
                                  structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'])
             )
             if self.__layers[hidden_layer_ind].input_map_size != self.__layers[hidden_layer_ind-1].feature_map_size:
+                raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
+                    hidden_layer_ind + 1)
+                )
+            if self.__layers[hidden_layer_ind].feature_maps_number != \
+                    self.__layers[hidden_layer_ind-1].feature_maps_number:
                 raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
                     hidden_layer_ind + 1)
                 )
@@ -93,6 +111,11 @@ class CNNClassifier:
                              structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'])
         )
         if self.__layers[hidden_layer_ind].input_map_size != self.__layers[hidden_layer_ind - 1].feature_map_size:
+            raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
+                hidden_layer_ind + 1)
+            )
+        if self.__layers[hidden_layer_ind].feature_maps_number != \
+                self.__layers[hidden_layer_ind - 1].feature_maps_number:
             raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
                 hidden_layer_ind + 1)
             )
@@ -170,7 +193,7 @@ class CNNClassifier:
             size_of_validation_set = int(round(X.shape[0] * self.__validation_fraction))
             if (size_of_validation_set < 1) or (size_of_validation_set >= X.shape[0]):
                 raise ECNNTraining('Validation set is specified incorrectly!')
-            indexes_of_samples = range(X.shape[0])
+            indexes_of_samples = list(range(X.shape[0]))
             random.shuffle(indexes_of_samples)
             indexes_of_train_samples = indexes_of_samples[:size_of_validation_set]
             indexes_of_validation_samples = indexes_of_samples[size_of_validation_set:]
@@ -201,7 +224,7 @@ class CNNClassifier:
                                  shape=(X.shape[0], self.__layers[-1].neurons_number))
             X_valid = None
             y_valid = None
-        indexes_of_train_samples = range(X_train.shape[0])
+        indexes_of_train_samples = list(range(X_train.shape[0]))
         if (X_valid is not None) and (y_valid is not None):
             epochs_number = 0
             can_continue = True
@@ -244,7 +267,7 @@ class CNNClassifier:
             lambda a, b: a + b,
             map(lambda y_true, x: 1.0 if y_true == self.__calculate_output_label(x) else 0.0, y, X),
             0.0
-        )
+        ) / y.shape[0]
 
     def __calculate_output_label(self, X):
         outputs_of_layer = self.__layers[0].calculate_outputs(X)
