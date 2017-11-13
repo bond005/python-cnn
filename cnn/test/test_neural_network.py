@@ -63,9 +63,9 @@ class TestNeuralNetwork(unittest.TestCase):
                 }
             ),
             classes_number=10,
-            max_epochs_number=50,
+            max_epochs_number=5,
             learning_rate=0.01,
-            early_stopping=True,
+            early_stopping=False,
             validation_fraction=0.15
         )
 
@@ -75,7 +75,7 @@ class TestNeuralNetwork(unittest.TestCase):
         self.assertEqual(cnn.input_maps_number, 1)
         self.assertIsInstance(cnn.input_map_size, tuple)
         self.assertEqual(cnn.input_map_size, (28, 28))
-        self.assertEqual(cnn.max_train_epochs, 50)
+        self.assertEqual(cnn.max_train_epochs, 5)
         self.assertIsInstance(cnn.layers, list)
         self.assertEqual(len(cnn.layers), 5)
         self.assertIsInstance(cnn.layers[0], convolution_layer.ConvolutionLayer)
@@ -87,7 +87,7 @@ class TestNeuralNetwork(unittest.TestCase):
         self.assertIsInstance(cnn.learning_rate, float)
         self.assertAlmostEqual(cnn.learning_rate, 0.01, places=7)
         self.assertIsInstance(cnn.early_stopping, bool)
-        self.assertTrue(cnn.early_stopping)
+        self.assertFalse(cnn.early_stopping)
         self.assertIsInstance(cnn.validation_fraction, float)
         self.assertAlmostEqual(cnn.validation_fraction, 0.15, places=7)
 
@@ -122,7 +122,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=-50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -157,7 +157,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.0,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -192,7 +192,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.0
             )
 
@@ -227,7 +227,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=1.0
             )
 
@@ -262,7 +262,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -297,7 +297,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -332,7 +332,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -367,7 +367,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=1,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -387,7 +387,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -417,7 +417,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -451,7 +451,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -485,7 +485,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -519,7 +519,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -554,7 +554,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -589,7 +589,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -624,7 +624,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -659,7 +659,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -695,7 +695,7 @@ class TestNeuralNetwork(unittest.TestCase):
                 classes_number=10,
                 max_epochs_number=50,
                 learning_rate=0.01,
-                early_stopping=True,
+                early_stopping=False,
                 validation_fraction=0.15
             )
 
@@ -728,7 +728,7 @@ class TestNeuralNetwork(unittest.TestCase):
             classes_number=10,
             max_epochs_number=50,
             learning_rate=0.01,
-            early_stopping=True,
+            early_stopping=False,
             validation_fraction=0.15
         )
         cnn.max_train_epochs = 100
@@ -764,7 +764,7 @@ class TestNeuralNetwork(unittest.TestCase):
             classes_number=10,
             max_epochs_number=50,
             learning_rate=0.01,
-            early_stopping=True,
+            early_stopping=False,
             validation_fraction=0.15
         )
         with self.assertRaisesRegex(TypeError, re.escape(target_err_msg)):
@@ -800,7 +800,7 @@ class TestNeuralNetwork(unittest.TestCase):
             classes_number=10,
             max_epochs_number=50,
             learning_rate=0.01,
-            early_stopping=True,
+            early_stopping=False,
             validation_fraction=0.15
         )
         with self.assertRaisesRegex(TypeError, re.escape(target_err_msg)):
@@ -1039,8 +1039,8 @@ class TestNeuralNetwork(unittest.TestCase):
         """ Проверяем генерацию исключения, если входные сигналы обучающего множества - не numpy.ndarray. """
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set()
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. Input data ' \
-                         'must be numpy.ndarray.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Input data must be numpy.ndarray.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train.tolist(), y_train)
 
@@ -1049,8 +1049,8 @@ class TestNeuralNetwork(unittest.TestCase):
         """
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set(number_of_input_maps=2)
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. Each input ' \
-                         'sample must consist of only one input map.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Each input sample must consist of only one input map.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1059,8 +1059,8 @@ class TestNeuralNetwork(unittest.TestCase):
         """
         cnn = self.create_cnn(number_of_input_maps=2)
         X_train, y_train = self.create_train_set()
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. ' \
-                         'Each input sample must consist of 2 input maps.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Each input sample must consist of 2 input maps.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1069,8 +1069,8 @@ class TestNeuralNetwork(unittest.TestCase):
         """
         cnn = self.create_cnn(number_of_input_maps=2)
         X_train, y_train = self.create_train_set(number_of_input_maps=0)
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. ' \
-                         'Each input sample must consist of 2 input maps.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Each input sample must consist of 2 input maps.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1079,8 +1079,8 @@ class TestNeuralNetwork(unittest.TestCase):
         """
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set(size_of_input_map=(30, 29))
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. ' \
-                         'Each input map in input data samples must be 28-by-28 matrix.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Each input map in input data samples must be 28-by-28 matrix.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1089,8 +1089,8 @@ class TestNeuralNetwork(unittest.TestCase):
         """
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set(size_of_input_map=(30, 29), number_of_input_maps=0)
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. ' \
-                         'Each input map in input data samples must be 28-by-28 matrix.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Each input map in input data samples must be 28-by-28 matrix.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1099,8 +1099,8 @@ class TestNeuralNetwork(unittest.TestCase):
         cnn = self.create_cnn()
         X_train = numpy.random.normal(0.0, 1.0, (100, 2, 3, 28, 28))
         y_train = numpy.random.randint(0, 10, (100,))
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. ' \
-                         'Input data has too many dimensions.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Input data has too many dimensions.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1110,8 +1110,8 @@ class TestNeuralNetwork(unittest.TestCase):
         cnn = self.create_cnn()
         X_train = numpy.random.normal(0.0, 1.0, (100, 28 * 28))
         y_train = numpy.random.randint(0, 10, (100,))
-        target_err_msg = 'Structure of input data does not correspond to structure of neural network. ' \
-                         'Input data has too few dimensions.'
+        target_err_msg = 'Convolution neural network cannot be trained! Structure of input data does not correspond ' \
+                         'to structure of neural network. Input data has too few dimensions.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1119,7 +1119,7 @@ class TestNeuralNetwork(unittest.TestCase):
         """ Проверяем генерацию исключения, если метки классов обучающего множества - не numpy.ndarray. """
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set()
-        target_err_msg = 'Target output must be numpy.ndarray.'
+        target_err_msg = 'Convolution neural network cannot be trained! Target output must be numpy.ndarray.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train.tolist())
 
@@ -1128,7 +1128,8 @@ class TestNeuralNetwork(unittest.TestCase):
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set()
         n = y_train.shape[0]
-        target_err_msg = 'Number of target outputs does not correspond to number of input samples.'
+        target_err_msg = 'Convolution neural network cannot be trained! Number of target outputs does not correspond ' \
+                         'to number of input samples.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train[0:(n-1)])
 
@@ -1137,7 +1138,7 @@ class TestNeuralNetwork(unittest.TestCase):
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set()
         y_train = numpy.random.uniform(0, 10, (X_train.shape[0],))
-        target_err_msg = 'Each value of target output must be integer.'
+        target_err_msg = 'Convolution neural network cannot be trained! Each value of target output must be integer.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1146,7 +1147,7 @@ class TestNeuralNetwork(unittest.TestCase):
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set()
         y_train = numpy.random.randint(0, 10, (X_train.shape[0], 3))
-        target_err_msg = 'Target output has too many dimensions.'
+        target_err_msg = 'Convolution neural network cannot be trained! Target output has too many dimensions.'
         with self.assertRaisesRegex(ECNNTraining, re.escape(target_err_msg)):
             cnn.fit(X_train, y_train)
 
@@ -1155,7 +1156,8 @@ class TestNeuralNetwork(unittest.TestCase):
         cnn = self.create_cnn()
         X_train, y_train = self.create_train_set()
         y_train = numpy.random.randint(0, 20, (X_train.shape[0],))
-        with self.assertRaisesRegex(ECNNTraining, 'Target output for \d+ sample is incorrect.'):
+        with self.assertRaisesRegex(ECNNTraining, 'Convolution neural network cannot be trained! Target output '
+                                                  'for \d+(st|nd|rd|th) sample is incorrect.'):
             cnn.fit(X_train, y_train)
 
 

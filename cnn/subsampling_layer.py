@@ -63,28 +63,21 @@ class SubsamplingLayer:
     6) активационная функция каждого нейрона в каждой карте слоя подвыборки - это гиперболический
     тангенс.
     """
-    def __init__(self, layer_id, features_maps_number, feature_map_size, receptive_field_size):
+    def __init__(self, layer_id, features_maps_number, feature_map_size, receptive_field_size, check_all=True):
         if layer_id is None:
-            raise ESubsamplingLayerCreating('Integer identifier of this layer is specified '\
-                                            'incorrectly!')
+            raise ESubsamplingLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if not isinstance(layer_id, int):
-            raise ESubsamplingLayerCreating('Integer identifier of this layer is specified '\
-                                            'incorrectly!')
+            raise ESubsamplingLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if layer_id < 1:
-            raise ESubsamplingLayerCreating('Integer identifier of this layer is specified '\
-                                            'incorrectly!')
+            raise ESubsamplingLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if (features_maps_number < 1) or (len(feature_map_size) != 2):
-            raise ESubsamplingLayerCreating(layer_id, 'Feature maps of this layer are '\
-                                            'specified incorrectly!')
+            raise ESubsamplingLayerCreating(layer_id, 'Feature maps of this layer are specified incorrectly!')
         if (feature_map_size[0] < 1) or (feature_map_size[1] < 1):
-            raise ESubsamplingLayerCreating(layer_id, 'Feature maps of this layer are '\
-                                            'specified incorrectly!')
+            raise ESubsamplingLayerCreating(layer_id, 'Feature maps of this layer are specified incorrectly!')
         if len(receptive_field_size) != 2:
-            raise ESubsamplingLayerCreating(layer_id, 'Receptive field of this layer is '\
-                                            'specified incorrectly!')
+            raise ESubsamplingLayerCreating(layer_id, 'Receptive field of this layer is specified incorrectly!')
         if (receptive_field_size[0] < 1) or (receptive_field_size[1] < 1):
-            raise ESubsamplingLayerCreating(layer_id, 'Receptive field of this layer is '\
-                                            'specified incorrectly!')
+            raise ESubsamplingLayerCreating(layer_id, 'Receptive field of this layer is specified incorrectly!')
         # Размер рецептивного поля слоя подвыборки
         self.__receptive_field_size = tuple(receptive_field_size)
         # Размер одной карты признаков слоя подвыборки
@@ -106,6 +99,8 @@ class SubsamplingLayer:
         # Вспомогательные матрицы для представления уменьшенных входных карт
         self.__reduced_input_maps = [ numpy.zeros(self.__feature_map_size) \
                                       for ind in range(features_maps_number) ]
+        # Флаг, определяющий, надо ли проверять все структуры данных во время прямого и обратного хода по слою.
+        self.__check_all = check_all
 
     @property
     def feature_map_size(self):
@@ -172,6 +167,10 @@ class SubsamplingLayer:
     def gradients(self):
         return self.__gradients
 
+    @property
+    def outputs(self):
+        return self.__feature_maps
+
     def initialize_weights_and_biases(self):
         """ Инициализировать все веса (аддитивные смещения) и смещения случайными значениями. """
         features_maps_number = len(self.__feature_maps)
@@ -188,7 +187,8 @@ class SubsamplingLayer:
         допустимость структуры входных карт, которая должна соответствовать структуре слоя
         подвыборки.
         """
-        self.__check_input_maps_of_this_layer(input_maps)
+        if self.__check_all:
+            self.__check_input_maps_of_this_layer(input_maps)
         for ft_ind in range(len(self.__feature_maps)):
             for ind in numpy.ndindex(self.__feature_map_size):
                 row1 = ind[0] * self.__receptive_field_size[0]
@@ -214,8 +214,8 @@ class SubsamplingLayer:
         на основе некоторых входных карт, поданных на вход этого слоя подвыборки (т.е. прямое
         распространение сигнала уже было, а сейчас идёт обратное распространение ошибки).
         """
-        self.__check_gradient_maps_of_next_layer(next_weights, next_gradient, \
-                                                 next_receptive_field_size)
+        if self.__check_all:
+            self.__check_gradient_maps_of_next_layer(next_weights, next_gradient, next_receptive_field_size)
         feature_maps_number = len(self.__feature_maps)
         next_feature_maps_number = len(next_gradient)
         next_feature_map_size = next_gradient[0].shape
@@ -241,11 +241,10 @@ class SubsamplingLayer:
                         tmp_matrix[row_slice[0]:row_slice[1], col_slice[0]:col_slice[1]] \
                         * rotated_weights[next_ft_ind][ft_ind]
                     )
-            self.__gradients[ft_ind] *= (1.0 - self.__feature_maps[ft_ind]\
-                                         * self.__feature_maps[ft_ind])
+            self.__gradients[ft_ind] *= (1.0 - self.__feature_maps[ft_ind] * self.__feature_maps[ft_ind])
         return self.__gradients
 
-    def update_weights_and_biases(self, learning_rate):
+    def update_weights_and_biases(self, learning_rate, inputs_maps=None):
         """ Обновить веса и смещения всех нейронов слоя подвыборки.
 
         После того, как в результате прямого распространения сигнала были расчитаны карты признаков,
@@ -298,8 +297,7 @@ class SubsamplingLayer:
                     'input maps!'.format(cnn.common.integer_to_ordinal(ind+2))
                 )
 
-    def __check_gradient_maps_of_next_layer(self, next_weights, next_gradient_maps, \
-                                            next_receptive_field_size):
+    def __check_gradient_maps_of_next_layer(self, next_weights, next_gradient_maps, next_receptive_field_size):
         """ Сгенерировать исключение ESubsamplingLayerGradient, если параметры следующего слоя
         свёртки заданы некорректно по отношению к текущему слою подвыборки.
         """

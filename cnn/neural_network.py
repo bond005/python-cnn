@@ -4,7 +4,6 @@ import random
 import tempfile
 
 import numpy
-from scipy.sparse import csc_matrix
 
 from cnn.common import ENeuralNetworkException, integer_to_ordinal
 from cnn.convolution_layer import ConvolutionLayer
@@ -19,6 +18,8 @@ class ECNNCreating(ENeuralNetworkException):
 
 class ECNNTraining(ENeuralNetworkException):
     """ Ошибка обучения свёрточной НС. """
+    def get_base_msg(self):
+        return 'Convolution neural network cannot be trained!'
 
 
 class CNNClassifier:
@@ -71,7 +72,7 @@ class CNNClassifier:
         self.__layers.append(
             ConvolutionLayer(1, input_maps_number, structure_of_hidden_layers[0]['feature_maps_number'],
                              structure_of_hidden_layers[0]['feature_map_size'],
-                             structure_of_hidden_layers[0]['receptive_field_size'])
+                             structure_of_hidden_layers[0]['receptive_field_size'], False)
         )
         if tuple(self.__layers[0].input_map_size) != tuple(input_map_size):
             raise ECNNCreating('Structure of layer 1 does not correspond to structure of input maps!')
@@ -81,7 +82,7 @@ class CNNClassifier:
                 SubsamplingLayer(hidden_layer_ind + 1,
                                  structure_of_hidden_layers[hidden_layer_ind]['feature_maps_number'],
                                  structure_of_hidden_layers[hidden_layer_ind]['feature_map_size'],
-                                 structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'])
+                                 structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'], False)
             )
             if self.__layers[hidden_layer_ind].input_map_size != self.__layers[hidden_layer_ind-1].feature_map_size:
                 raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
@@ -98,17 +99,17 @@ class CNNClassifier:
                                  structure_of_hidden_layers[hidden_layer_ind-1]['feature_maps_number'],
                                  structure_of_hidden_layers[hidden_layer_ind]['feature_maps_number'],
                                  structure_of_hidden_layers[hidden_layer_ind]['feature_map_size'],
-                                 structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'])
+                                 structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'], False)
             )
             if self.__layers[hidden_layer_ind].input_map_size != self.__layers[hidden_layer_ind - 1].feature_map_size:
                 raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
                     hidden_layer_ind + 1)
                 )
-        hidden_layer_ind = number_of_hidden_layers - 2
+        hidden_layer_ind = number_of_hidden_layers - 1
         self.__layers.append(
             SubsamplingLayer(hidden_layer_ind + 1, structure_of_hidden_layers[hidden_layer_ind]['feature_maps_number'],
                              structure_of_hidden_layers[hidden_layer_ind]['feature_map_size'],
-                             structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'])
+                             structure_of_hidden_layers[hidden_layer_ind]['receptive_field_size'], False)
         )
         if self.__layers[hidden_layer_ind].input_map_size != self.__layers[hidden_layer_ind - 1].feature_map_size:
             raise ECNNCreating('Structure of layer {0} does not correspond to structure of previous layer!'.format(
@@ -123,7 +124,7 @@ class CNNClassifier:
         self.__layers.append(
             OutputLayer(hidden_layer_ind, structure_of_hidden_layers[hidden_layer_ind-1]['feature_maps_number'],
                         structure_of_hidden_layers[hidden_layer_ind - 1]['feature_map_size'],
-                        classes_number if classes_number > 2 else 1)
+                        classes_number if classes_number > 2 else 1, False)
         )
         self.__max_epochs_number = max_epochs_number
         self.__learning_rate = learning_rate
@@ -216,12 +217,14 @@ class CNNClassifier:
             X_valid = X[indexes_of_validation_samples]
             y_valid = y[indexes_of_validation_samples]
             X_train = X[indexes_of_train_samples]
-            y_train = csc_matrix((1.0, (numpy.arange(len(indexes_of_train_samples)), y[indexes_of_train_samples])),
-                                 shape=(len(indexes_of_train_samples), self.__layers[-1].neurons_number))
+            y_train = numpy.zeros((len(indexes_of_train_samples), self.__layers[-1].neurons_number))
+            for sample_ind in range(len(indexes_of_train_samples)):
+                y_train[sample_ind][y[indexes_of_train_samples[sample_ind]]] = 1.0
         else:
             X_train = X
-            y_train = csc_matrix((1.0, (numpy.arange(X.shape[0]), y)),
-                                 shape=(X.shape[0], self.__layers[-1].neurons_number))
+            y_train = numpy.zeros((X.shape[0], self.__layers[-1].neurons_number))
+            for sample_ind in range(X.shape[0]):
+                y_train[sample_ind][y[sample_ind]] = 1.0
             X_valid = None
             y_valid = None
         indexes_of_train_samples = list(range(X_train.shape[0]))
@@ -313,7 +316,7 @@ class CNNClassifier:
         if isinstance(y, numpy.ndarray):
             set_of_integer_types = {numpy.int32, numpy.uint32, numpy.int64, numpy.uint64, numpy.int16, numpy.uint16,
                                     numpy.int8, numpy.uint8, numpy.int_, numpy.intc, numpy.intp}
-            if y.dtype in set_of_integer_types:
+            if any(map(lambda cur: y.dtype == cur, set_of_integer_types)):
                 sizes = y.shape
                 if len(sizes) > 1:
                     err_msg = 'Target output has too many dimensions.'
@@ -340,14 +343,23 @@ class CNNClassifier:
             outputs_of_layer = self.__layers[0].calculate_outputs(X[cur_ind])
             for layer_ind in range(number_of_layers - 1):
                 outputs_of_layer = self.__layers[layer_ind + 1].calculate_outputs(outputs_of_layer)
-            self.__layers[-1].calculate_gradient(y[cur_ind].toarray())
-            for layer_ind in range(number_of_layers - 1):
-                self.__layers[number_of_layers - 2 - layer_ind].calculate_gradient(
-                    self.__layers[number_of_layers - 2 - layer_ind + 1].weights,
-                    self.__layers[number_of_layers - 2 - layer_ind + 1].gradients,
-                    self.__layers[number_of_layers - 2 - layer_ind + 1].receptive_field_size
+            self.__layers[-1].calculate_gradient(y[cur_ind])
+            layer_ind = number_of_layers - 2
+            self.__layers[layer_ind].calculate_gradient(
+                self.__layers[layer_ind + 1].weights,
+                [numpy.full((1, 1), grad) for grad in self.__layers[layer_ind + 1].gradients],
+                self.__layers[layer_ind].feature_map_size
+            )
+            for layer_ind_ in range(number_of_layers - 2):
+                layer_ind = number_of_layers - 3 - layer_ind_
+                self.__layers[layer_ind].calculate_gradient(
+                    self.__layers[layer_ind + 1].weights,
+                    self.__layers[layer_ind + 1].gradients,
+                    self.__layers[layer_ind + 1].receptive_field_size
                 )
-            for layer_ind in range(number_of_layers):
-                self.__layers[layer_ind].update_weights_and_biases(self.__learning_rate)
+            self.__layers[0].update_weights_and_biases(self.__learning_rate, X[cur_ind])
+            for layer_ind in range(number_of_layers - 1):
+                self.__layers[layer_ind + 1].update_weights_and_biases(self.__learning_rate,
+                                                                       self.__layers[layer_ind].outputs)
 
 

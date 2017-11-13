@@ -64,33 +64,26 @@ class ConvolutionLayer:
     картам признаков с шагом, равным размерам самого этого поля, таким образом выделяя строго
     соседние, а не перекрывающиеся области.
     """
-    def __init__(self, layer_id, input_maps_number, features_maps_number, feature_map_size, \
-                 receptive_field_size):
+    def __init__(self, layer_id, input_maps_number, features_maps_number, feature_map_size, receptive_field_size,
+                 check_all=True):
         if layer_id is None:
-            raise EConvolutionLayerCreating('Integer identifier of this layer is specified '\
-                                            'incorrectly!')
+            raise EConvolutionLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if not isinstance(layer_id, int):
-            raise EConvolutionLayerCreating('Integer identifier of this layer is specified '\
-                                            'incorrectly!')
+            raise EConvolutionLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if layer_id < 1:
-            raise EConvolutionLayerCreating('Integer identifier of this layer is specified '\
-                                            'incorrectly!')
+            raise EConvolutionLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if input_maps_number < 1:
             raise EConvolutionLayerCreating(layer_id,
-                                            'Structure of input data for this layer (number of '\
-                                            'input maps) is specified incorrectly!')
+                                            'Structure of input data for this layer (number of input maps) is '
+                                            'specified incorrectly!')
         if (features_maps_number < 1) or (len(feature_map_size) != 2):
-            raise EConvolutionLayerCreating(layer_id, 'Feature maps of this layer are '\
-                                            'specified incorrectly!')
+            raise EConvolutionLayerCreating(layer_id, 'Feature maps of this layer are specified incorrectly!')
         if (feature_map_size[0] < 1) or (feature_map_size[1] < 1):
-            raise EConvolutionLayerCreating(layer_id, 'Feature maps of this layer are '\
-                                            'specified incorrectly!')
+            raise EConvolutionLayerCreating(layer_id, 'Feature maps of this layer are specified incorrectly!')
         if len(receptive_field_size) != 2:
-            raise EConvolutionLayerCreating(layer_id, 'Receptive field of this layer is '\
-                                            'specified incorrectly!')
+            raise EConvolutionLayerCreating(layer_id, 'Receptive field of this layer is specified incorrectly!')
         if (receptive_field_size[0] < 1) or (receptive_field_size[1] < 1):
-            raise EConvolutionLayerCreating(layer_id, 'Receptive field of this layer is '\
-                                            'specified incorrectly!')
+            raise EConvolutionLayerCreating(layer_id, 'Receptive field of this layer is specified incorrectly!')
         # Количество входных карт в данных, подаваемых на вход слоя свёртки
         self.__number_of_input_maps = input_maps_number
         # Размер рецептивного поля слоя свёртки
@@ -119,10 +112,12 @@ class ConvolutionLayer:
         # Идентификатор слоя (как правило, номер слоя в нейронной сети)
         self.__layer_id = layer_id
         # Вспомогательный список всех возможных пары индексов карты признаков и входной карты
-        self.__ft_map_and_inp_map_indexes = list(itertools.product(range(features_maps_number), \
+        self.__ft_map_and_inp_map_indexes = list(itertools.product(range(features_maps_number),
                                                                    range(input_maps_number)))
         # Вспомогательная матрица для вычисления новых значений ядер свёртки
         self.__tmp_matrix = numpy.zeros(self.__receptive_field_size)
+        # Флаг, определяющий, надо ли проверять все структуры данных во время прямого и обратного хода по слою.
+        self.__check_all = check_all
 
     @property
     def feature_map_size(self):
@@ -151,8 +146,8 @@ class ConvolutionLayer:
 
     @property
     def number_of_trainable_params(self):
-        return (self.__receptive_field_size[0] * self.__receptive_field_size[1] \
-                * self.__number_of_input_maps + 1) * len(self.__feature_maps)
+        return (self.__receptive_field_size[0] * self.__receptive_field_size[1] *
+                self.__number_of_input_maps + 1) * len(self.__feature_maps)
 
     @property
     def weights(self):
@@ -197,6 +192,10 @@ class ConvolutionLayer:
     def gradients(self):
         return self.__gradients
 
+    @property
+    def outputs(self):
+        return self.__feature_maps
+
     def initialize_weights_and_biases(self):
         """ Инициализировать все веса (ядра свёртки) и смещения случайными значениями. """
         features_maps_number = len(self.__feature_maps)
@@ -215,7 +214,8 @@ class ConvolutionLayer:
         признаков. Перед вычислением проверить допустимость структуры входных карт, которая должна
         соответствовать структуре слоя свёртки.
         """
-        self.__check_input_maps_of_this_layer(input_maps)
+        if self.__check_all:
+            self.__check_input_maps_of_this_layer(input_maps)
         for ft_map_ind in range(len(self.__feature_maps)):
             input_maps_and_conv_kernels = list(
                 zip(input_maps, self.__weights_of_feature_maps[ft_map_ind])
@@ -243,8 +243,8 @@ class ConvolutionLayer:
         основе некоторых входных карт, поданных на вход этого слоя свёртки (т.е. прямое
         распространение сигнала уже было, а сейчас идёт обратное распространение ошибки).
         """
-        self.__check_gradient_maps_of_next_layer(next_weights, next_gradient, \
-                                                 next_receptive_field_size)
+        if self.__check_all:
+            self.__check_gradient_maps_of_next_layer(next_weights, next_gradient, next_receptive_field_size)
         matrix_for_upsampling = numpy.ones(next_receptive_field_size)
         ones_matrix = numpy.ones(self.__feature_map_size)
         for ind in range(len(self.__feature_maps)):
@@ -260,7 +260,8 @@ class ConvolutionLayer:
         После того, как в результате прямого распространения сигнала были расчитаны карты признаков,
         а в результате обратного распространения ошибки - карты градиентов, обновить веса (ядра
         свёртки) и смещения нейронов слоя свёртки. """
-        self.__check_input_maps_of_this_layer(input_maps)
+        if self.__check_all:
+            self.__check_input_maps_of_this_layer(input_maps)
         if learning_rate is None:
             return
         for ind in range(len(self.__feature_maps)):

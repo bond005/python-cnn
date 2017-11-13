@@ -60,7 +60,7 @@ class OutputLayer:
     непосредственно, а не через локальные градиенты нейронов следующего слоя;
     5) целевая функция при обучении нейронной сети - кросс-энтропия.
     """
-    def __init__(self, layer_id, input_maps_number, input_map_size, neurons_number):
+    def __init__(self, layer_id, input_maps_number, input_map_size, neurons_number, check_all=True):
         if layer_id is None:
             raise EOutputLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if not isinstance(layer_id, int):
@@ -69,15 +69,14 @@ class OutputLayer:
             raise EOutputLayerCreating('Integer identifier of this layer is specified incorrectly!')
         if (input_maps_number < 1) or (len(input_map_size) != 2):
             raise EOutputLayerCreating(layer_id,
-                                       'Structure of input data for this layer (number of input '\
-                                       'maps) is specified incorrectly!')
+                                       'Structure of input data for this layer (number of input maps) is specified '
+                                       'incorrectly!')
         if (input_map_size[0] < 1) or (input_map_size[1] < 1):
             raise EOutputLayerCreating(layer_id,
-                                       'Structure of input data for this layer (number of input '\
-                                       'maps) is specified incorrectly!')
-        if neurons_number < 2:
-            raise EOutputLayerCreating(layer_id, 'Number of neurons in this layer is specified '\
+                                       'Structure of input data for this layer (number of input maps) is specified '
                                        'incorrectly!')
+        if neurons_number < 2:
+            raise EOutputLayerCreating(layer_id, 'Number of neurons in this layer is specified incorrectly!')
         # Количество входных карт в данных, подаваемых на вход слоя свёртки
         self.__number_of_input_maps = input_maps_number
         # Размер одной входной карты в данных, подаваемых на вход слоя свёртки
@@ -98,6 +97,8 @@ class OutputLayer:
         self.__gradients = [0.0 for ind in range(neurons_number)]
         # Идентификатор слоя (как правило, номер слоя в нейронной сети)
         self.__layer_id = layer_id
+        # Флаг, определяющий, надо ли проверять все структуры данных во время прямого и обратного хода по слою.
+        self.__check_all = check_all
 
     @property
     def neurons_number(self):
@@ -163,6 +164,10 @@ class OutputLayer:
     def gradients(self):
         return self.__gradients
 
+    @property
+    def outputs(self):
+        return self.__outputs
+
     def initialize_weights_and_biases(self):
         """ Инициализировать все веса и смещения случайными значениями. """
         neurons_number = len(self.__outputs)
@@ -181,7 +186,8 @@ class OutputLayer:
         Перед вычислением проверить допустимость структуры входных карт, которая должна
         соответствовать структуре выходного слоя.
         """
-        self.__check_input_maps_of_this_layer(input_maps)
+        if self.__check_all:
+            self.__check_input_maps_of_this_layer(input_maps)
         sum_of_outputs = 0.0
         for neuron_ind in range(len(self.__outputs)):
             output_of_accumulator = functools.reduce(
@@ -204,7 +210,8 @@ class OutputLayer:
         вход этого слоя (т.е. прямое распространение сигнала уже было, а сейчас идёт обратное
         распространение ошибки).
         """
-        self.__check_target_outputs(target_outputs)
+        if self.__check_all:
+            self.__check_target_outputs(target_outputs)
         self.__gradients = [target_outputs[neuron_ind] - self.__outputs[neuron_ind]
                             for neuron_ind in range(len(self.__outputs))]
         return self.__gradients
@@ -215,7 +222,8 @@ class OutputLayer:
         После того, как в результате прямого распространения сигнала были расчитаны выходы нейронов,
         а в результате обратного распространения ошибки - локальные градиенты этих нейронов,
         обновить веса и смещения нейронов выходного слоя. """
-        self.__check_input_maps_of_this_layer(input_maps)
+        if self.__check_all:
+            self.__check_input_maps_of_this_layer(input_maps)
         if learning_rate is None:
             return
         self.__biases_of_neurons = [ self.__biases_of_neurons[neuron_ind]
